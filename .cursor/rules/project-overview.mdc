@@ -1,0 +1,30 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# FormForge Project Overview
+
+FormForge is a form builder application with the following structure:
+
+## Frontend
+- React-based application with TypeScript
+- Tailwind CSS for styling
+- React Router for navigation
+- React Query for data fetching
+
+## Backend
+- GraphQL API using Pothos
+- Drizzle ORM for database operations
+- PostgreSQL database (via PGLite for development)
+- Lucia for authentication
+
+## Key Directories
+- `/src/components`: React components
+- `/src/context`: React context providers
+- `/src/lib`: Core libraries and utilities
+  - `/lib/graphql`: GraphQL schema, resolvers, and types
+  - `/lib/schema`: Database schema definitions
+  - `/lib/migrations`: Database migrations
+- `/src/pages`: React page components
+- `/src/server`: API server code

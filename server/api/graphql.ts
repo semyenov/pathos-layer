@@ -1,5 +1,6 @@
 import { createYoga } from 'graphql-yoga';
 import { useSchema } from '../utils/graphql';
+import { sendWebResponse } from 'h3';
 
 const schema = useSchema();
 
@@ -25,11 +26,9 @@ const graphql = createYoga({
 
     const session = authSession.session;
     const user = authSession.user;
+
     const member = user?.id ? await db.query.members.findFirst({
-      where: {
-        userId: user.id,
-        organizationId: session.activeOrganizationId ?? undefined,
-      }
+      where: { userId: user.id, organizationId: session.activeOrganizationId ?? undefined, }
     }) : null;
 
     return {
@@ -45,13 +44,8 @@ const graphql = createYoga({
   },
 });
 
-export default defineNitroPlugin(({ router }) => {
-  router.get('/graphql', defineEventHandler(async (event) => {
-    const req = toWebRequest(event)
-    return graphql.handleRequest(req, event.context as any);
-  }));
-
-  router.use('/health', defineEventHandler(() => {
-    return 'OK';
-  }));
+export default defineEventHandler(async (event) => {
+  const { req, res } = event.node;
+  const response = await graphql.handleNodeRequestAndResponse(req, res);
+  return sendWebResponse(event, response);
 });

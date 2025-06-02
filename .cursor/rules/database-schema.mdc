@@ -1,0 +1,32 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Database Schema
+
+The project uses Drizzle ORM with PostgreSQL. The schema is defined in:
+
+- [src/lib/schema/app.ts](mdc:src/lib/schema/app.ts) - Application tables (forms, form fields, etc.)
+- [src/lib/schema/auth.ts](mdc:src/lib/schema/auth.ts) - Authentication tables (users, sessions, etc.)
+- [src/lib/schema/relations.ts](mdc:src/lib/schema/relations.ts) - Table relationships
+
+## Key Tables
+
+### Auth
+- `users` - User accounts
+- `sessions` - User sessions
+- `accounts` - Authentication accounts
+- `organizations` - Organizations for users
+
+### App
+- `forms` - Form definitions
+- `formFields` - Fields for forms
+- `templates` - Form templates
+- `templateFields` - Fields for form templates
+- `formHistories` - History of form changes
+- `reviewFlows` - Form review workflows
+- `comments` - Comments on forms
+
+## Database Relationships
+Tables relationships are defined using Drizzle's `defineRelations` in [relations.ts](mdc:src/lib/schema/relations.ts).

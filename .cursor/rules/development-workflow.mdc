@@ -1,0 +1,34 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Development Workflow
+
+## Project Setup
+
+1. Install dependencies: `npm install`
+2. Start development server: `npm run dev`
+3. Server runs at http://localhost:5173 with API at http://localhost:5173/api/graphql
+
+## Key Configuration Files
+
+- [package.json](mdc:package.json) - Project dependencies and scripts
+- [vite.config.ts](mdc:vite.config.ts) - Vite configuration with plugins
+- [tsconfig.json](mdc:tsconfig.json) - TypeScript configuration
+- [drizzle.config.ts](mdc:drizzle.config.ts) - Drizzle ORM configuration
+- [tailwind.config.js](mdc:tailwind.config.js) - Tailwind CSS configuration
+
+## Database
+
+- Dev database is stored in `./dev.db` directory (PGLite)
+- Schema is defined in [src/lib/schema](mdc:src/lib/schema/index.ts)
+- Migrations are in [src/lib/migrations](mdc:src/lib/migrations/0000_careless_madrox.sql)
+
+## Adding Features
+
+1. Update database schema if needed
+2. Generate/apply migrations
+3. Update GraphQL types and resolvers
+4. Add/modify React components and pages
+5. Update routing if needed

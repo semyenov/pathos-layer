@@ -1,0 +1,31 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# GraphQL API Structure
+
+The project uses Pothos to build a GraphQL schema, with several plugins:
+- Drizzle Plugin for ORM integration
+- Auth Plugin for authentication
+- Validation Plugin for input validation
+
+## Key Files
+
+- [src/lib/graphql/builder.ts](mdc:src/lib/graphql/builder.ts) - GraphQL schema builder setup
+- [src/lib/graphql/schema.ts](mdc:src/lib/graphql/schema.ts) - Main schema definition
+
+## GraphQL Types
+
+- [src/lib/graphql/types/User.ts](mdc:src/lib/graphql/types/User.ts) - User type and queries
+- [src/lib/graphql/types/Form.ts](mdc:src/lib/graphql/types/Form.ts) - Form types, queries and mutations
+- [src/lib/graphql/types/Auth.ts](mdc:src/lib/graphql/types/Auth.ts) - Authentication mutations
+
+## Server Setup
+
+- [src/server/api.ts](mdc:src/server/api.ts) - Yoga GraphQL server setup
+- [src/server/index.ts](mdc:src/server/index.ts) - HTTP server initialization
+
+## Authentication
+
+Authentication is handled through GraphQL mutations (login, register, logout) defined in [Auth.ts](mdc:src/lib/graphql/types/Auth.ts).

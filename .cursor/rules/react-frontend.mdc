@@ -1,0 +1,33 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# React Frontend Structure
+
+The frontend is built with React, React Router, and Tailwind CSS.
+
+## Key Components
+
+- [src/App.tsx](mdc:src/App.tsx) - Main application component with routing
+- [src/components/Layout.tsx](mdc:src/components/Layout.tsx) - Main layout with navigation
+- [src/components/AuthGuard.tsx](mdc:src/components/AuthGuard.tsx) - Authentication protection
+
+## Context
+
+- [src/context/AuthContext.tsx](mdc:src/context/AuthContext.tsx) - Authentication context for user state
+
+## Pages
+
+- [src/pages/Login.tsx](mdc:src/pages/Login.tsx) - Login page
+- [src/pages/Register.tsx](mdc:src/pages/Register.tsx) - Registration page
+- [src/pages/Dashboard.tsx](mdc:src/pages/Dashboard.tsx) - Main dashboard
+- [src/pages/FormList.tsx](mdc:src/pages/FormList.tsx) - List of forms
+- [src/pages/FormBuilder.tsx](mdc:src/pages/FormBuilder.tsx) - Form creation interface
+- [src/pages/FormSubmission.tsx](mdc:src/pages/FormSubmission.tsx) - Form submission interface
+
+## Authentication Flow
+
+1. User logs in or registers via forms in Login/Register pages
+2. AuthContext handles authentication state and API calls
+3. AuthGuard component protects routes requiring authentication
