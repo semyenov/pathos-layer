@@ -1,4 +1,5 @@
 import { eq } from 'drizzle-orm';
+import type { Builder } from '../builder';
 
 export function addSessionTypes(builder: Builder) {
   const SessionType = builder.drizzleNode('sessions', {
@@ -23,7 +24,7 @@ export function addSessionTypes(builder: Builder) {
     t.field({
       type: SessionType,
       description: 'Get the current user\'s session.',
-      resolve: async (_, __, { db, session }: Context) => {
+      resolve: async (_, __, { db, session }) => {
         if (!session?.userId) {
           throw new Error('User not authenticated');
         }
@@ -53,7 +54,7 @@ export function addSessionTypes(builder: Builder) {
       authScopes: {
         loggedIn: true,
       },
-      resolve: async (_, args, { db, session }: Context) => {
+      resolve: async (_, args, { db, session }) => {
         if (!session?.userId) {
           throw new Error('User not authenticated');
         }

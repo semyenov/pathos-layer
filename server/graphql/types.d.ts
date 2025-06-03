@@ -1,5 +1,5 @@
 import type { CookieStore } from '@whatwg-node/cookie-store';
-import type { DB } from '../db';
+
 import type {
   Auth,
   Session,
@@ -7,6 +7,7 @@ import type {
   Member,
   Organization,
 } from '../auth';
+
 
 export interface Context {
   db: DB;
@@ -32,7 +33,6 @@ export type Scalars = {
     Input: unknown;
     Output: unknown;
   };
-
 };
 
 export interface AuthScopes {

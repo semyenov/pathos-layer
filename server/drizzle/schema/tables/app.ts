@@ -5,7 +5,6 @@ import {
   pgTable,
   text,
   timestamp,
-  uuid,
 } from "drizzle-orm/pg-core";
 
 import {
@@ -32,9 +31,7 @@ export const formFieldStatusEnum = pgEnum("FieldStatus", [
 ]);
 
 export const formFields = pgTable("form_fields", {
-  id: uuid("id")
-    .primaryKey()
-    .defaultRandom(),
+  id: text("id").primaryKey(),
 
   name: text("name").notNull(),
   options: text("options"),
@@ -46,13 +43,13 @@ export const formFields = pgTable("form_fields", {
   description: text("description"),
   value: text("value"),
 
-  formId: uuid("formId")
+  formId: text("formId")
     .references(() => forms.id, { onDelete: "cascade" })
     .notNull(),
-  templateFieldId: uuid("templateFieldId")
+  templateFieldId: text("templateFieldId")
     .references(() => templateFields.id, { onDelete: "cascade" })
     .notNull(),
-  lastModifiedBy: uuid("lastModifiedBy")
+  lastModifiedBy: text("lastModifiedBy")
     .references(() => users.id, { onDelete: "cascade" })
     .notNull(),
 
@@ -73,7 +70,7 @@ export const formStatusEnum = pgEnum("FormStatus", [
 ]);
 
 export const forms = pgTable("forms", {
-  id: uuid("id").primaryKey().defaultRandom(),
+  id: text("id").primaryKey(),
 
   title: text("title").notNull(),
   description: text("description"),
@@ -81,19 +78,19 @@ export const forms = pgTable("forms", {
   version: integer("version").default(1).notNull(),
 
   // References
-  creatorMemberId: uuid("creatorMemberId")
+  creatorMemberId: text("creatorMemberId")
     .references(() => members.id, { onDelete: "cascade" })
     .notNull(),
-  executorMemberId: uuid("executorMemberId")
+  executorMemberId: text("executorMemberId")
     .references(() => members.id, { onDelete: "cascade" })
     .notNull(),
-  lastModifiedBy: uuid("lastModifiedBy")
+  lastModifiedBy: text("lastModifiedBy")
     .references(() => users.id, { onDelete: "cascade" })
     .notNull(),
-  organizationId: uuid("organizationId")
+  organizationId: text("organizationId")
     .references(() => organizations.id, { onDelete: "cascade" })
     .notNull(),
-  templateId: uuid("templateId")
+  templateId: text("templateId")
     .references(() => templates.id, { onDelete: "cascade" })
     .notNull(),
 
@@ -107,20 +104,20 @@ export const forms = pgTable("forms", {
 });
 
 export const templates = pgTable("form_templates", {
-  id: uuid("id").primaryKey().defaultRandom(),
+  id: text("id").primaryKey(),
 
   description: text("description"),
   name: text("name").unique().notNull(),
   version: integer("version").default(1).notNull(),
 
   // References
-  creatorMemberId: uuid("creatorMemberId")
+  creatorMemberId: text("creatorMemberId")
     .references(() => members.id, { onDelete: "cascade" })
     .notNull(),
-  lastModifiedBy: uuid("lastModifiedBy")
+  lastModifiedBy: text("lastModifiedBy")
     .references(() => users.id, { onDelete: "cascade" })
     .notNull(),
-  organizationId: uuid("organizationId")
+  organizationId: text("organizationId")
     .references(() => organizations.id, { onDelete: "cascade" })
     .notNull(),
 
@@ -134,7 +131,7 @@ export const templates = pgTable("form_templates", {
 });
 
 export const templateFields = pgTable("form_template_fields", {
-  id: uuid("id").primaryKey().defaultRandom(),
+  id: text("id").primaryKey(),
 
   defaultValue: text("defaultValue"),
   name: text("name").notNull(),
@@ -146,10 +143,10 @@ export const templateFields = pgTable("form_template_fields", {
   value: text("value"),
   description: text("description"),
 
-  templateId: uuid("templateId")
+  templateId: text("templateId")
     .references(() => templates.id, { onDelete: "cascade" })
     .notNull(),
-  lastModifiedBy: uuid("lastModifiedBy")
+  lastModifiedBy: text("lastModifiedBy")
     .references(() => users.id, { onDelete: "cascade" })
     .notNull(),
 
@@ -163,17 +160,17 @@ export const templateFields = pgTable("form_template_fields", {
 });
 
 export const formHistories = pgTable("form_histories", {
-  id: uuid("id").primaryKey().defaultRandom(),
+  id: text("id").primaryKey(),
 
   data: text("data"),
   status: formStatusEnum("status").notNull(),
   version: integer("version").default(1).notNull(),
 
   // References
-  formId: uuid("formId")
+  formId: text("formId")
     .references(() => forms.id, { onDelete: "cascade" })
     .notNull(),
-  memberId: uuid("memberId")
+  memberId: text("memberId")
     .references(() => members.id, { onDelete: "cascade" })
     .notNull(),
 
@@ -189,19 +186,19 @@ export const formHistories = pgTable("form_histories", {
 export const reviewFlowStatusEnum = pgEnum("ReviewFlowStatus", ["open", "closed"]);
 
 export const reviewFlows = pgTable("review_flows", {
-  id: uuid("id").primaryKey().defaultRandom(),
+  id: text("id").primaryKey(),
 
   status: reviewFlowStatusEnum("status").default("open").notNull(),
   version: integer("version").default(1).notNull(),
 
   // References
-  formId: uuid("formId")
+  formId: text("formId")
     .references(() => forms.id, { onDelete: "cascade" })
     .notNull(),
-  organizationId: uuid("organizationId")
+  organizationId: text("organizationId")
     .references(() => organizations.id, { onDelete: "cascade" })
     .notNull(),
-  lastModifiedBy: uuid("lastModifiedBy")
+  lastModifiedBy: text("lastModifiedBy")
     .references(() => users.id, { onDelete: "cascade" })
     .notNull(),
 
@@ -215,24 +212,24 @@ export const reviewFlows = pgTable("review_flows", {
 });
 
 export const comments = pgTable("comments", {
-  id: uuid("id").primaryKey().defaultRandom(),
+  id: text("id").primaryKey(),
 
   content: text("content").notNull(),
 
   // References
-  memberId: uuid("memberId")
+  memberId: text("memberId")
     .references(() => members.id, { onDelete: "cascade" })
     .notNull(),
-  formId: uuid("formId")
+  formId: text("formId")
     .references(() => forms.id, { onDelete: "cascade" })
     .notNull(),
-  formFieldId: uuid("formFieldId")
+  formFieldId: text("formFieldId")
     .references(() => formFields.id, { onDelete: "cascade" })
     .notNull(),
-  reviewFlowId: uuid("reviewFlowId")
+  reviewFlowId: text("reviewFlowId")
     .references(() => reviewFlows.id, { onDelete: "cascade" })
     .notNull(),
-  lastModifiedBy: uuid("lastModifiedBy")
+  lastModifiedBy: text("lastModifiedBy")
     .references(() => users.id, { onDelete: "cascade" })
     .notNull(),
 
@@ -246,18 +243,18 @@ export const comments = pgTable("comments", {
 });
 
 export const fileShares = pgTable("file_shares", {
-  id: uuid("id").primaryKey().defaultRandom(),
+  id: text("id").primaryKey(),
 
   expiresAt: timestamp("expiresAt", { mode: "date", precision: 3 }),
 
   // References
-  memberId: uuid("memberId")
+  memberId: text("memberId")
     .references(() => members.id, { onDelete: "cascade" })
     .notNull(),
-  formFieldId: uuid("formFieldId")
+  formFieldId: text("formFieldId")
     .references(() => formFields.id, { onDelete: "cascade" })
     .notNull(),
-  fileId: uuid("fileId")
+  fileId: text("fileId")
     .references(() => files.id, { onDelete: "cascade" })
     .notNull(),
 
@@ -277,7 +274,7 @@ export const fileAccessLevelEnum = pgEnum("FileAccessLevel", [
 ]);
 
 export const files = pgTable("files", {
-  id: uuid("id").primaryKey().defaultRandom(),
+  id: text("id").primaryKey(),
 
   accessLevel: fileAccessLevelEnum("accessLevel")
     .default("organization")
@@ -292,19 +289,19 @@ export const files = pgTable("files", {
   size: integer("size").notNull(),
 
   // References
-  organizationId: uuid("organizationId")
+  organizationId: text("organizationId")
     .references(() => organizations.id, { onDelete: "cascade" })
     .notNull(),
-  uploaderMemberId: uuid("uploaderMemberId")
+  uploaderMemberId: text("uploaderMemberId")
     .references(() => members.id, { onDelete: "cascade" })
     .notNull(),
-  lastModifiedBy: uuid("lastModifiedBy")
+  lastModifiedBy: text("lastModifiedBy")
     .references(() => users.id, { onDelete: "cascade" })
     .notNull(),
-  formFieldId: uuid("formFieldId")
+  formFieldId: text("formFieldId")
     .references(() => formFields.id, { onDelete: "cascade" })
     .notNull(),
-  fileFolderId: uuid("fileFolderId")
+  fileFolderId: text("fileFolderId")
     .references(() => fileFolders.id, { onDelete: "cascade" })
     .notNull(),
 
@@ -318,7 +315,7 @@ export const files = pgTable("files", {
 });
 
 export const fileFolders = pgTable("file_folders", {
-  id: uuid("id").primaryKey().defaultRandom(),
+  id: text("id").primaryKey(),
 
   description: text("description"),
   level: integer("level").notNull(),
@@ -327,17 +324,17 @@ export const fileFolders = pgTable("file_folders", {
   version: integer("version").default(1).notNull(),
 
   // References
-  parentId: uuid("parentId"),
-  organizationId: uuid("organizationId")
+  parentId: text("parentId"),
+  organizationId: text("organizationId")
     .references(() => organizations.id, { onDelete: "cascade" })
     .notNull(),
-  creatorMemberId: uuid("creatorMemberId")
+  creatorMemberId: text("creatorMemberId")
     .references(() => members.id, { onDelete: "cascade" })
     .notNull(),
-  lastModifiedBy: uuid("lastModifiedBy")
+  lastModifiedBy: text("lastModifiedBy")
     .references(() => users.id, { onDelete: "cascade" })
     .notNull(),
-  formFieldId: uuid("formFieldId")
+  formFieldId: text("formFieldId")
     .references(() => formFields.id, { onDelete: "cascade" })
     .notNull(),
 

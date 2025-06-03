@@ -1,4 +1,3 @@
-
 import {
   boolean,
   integer,
@@ -6,11 +5,10 @@ import {
   pgTable,
   text,
   timestamp,
-  uuid,
 } from "drizzle-orm/pg-core";
 
 export const organizations = pgTable("organizations", {
-  id: uuid("id").primaryKey().defaultRandom(),
+  id: text("id").primaryKey(),
 
   // Data
   logo: text("logo"),
@@ -19,8 +17,8 @@ export const organizations = pgTable("organizations", {
   metadata: text("metadata"),
 
   // References
-  ownerId: uuid("ownerId").notNull(),
-  lastModifiedBy: uuid("lastModifiedBy").notNull(),
+  ownerId: text("ownerId").notNull(),
+  lastModifiedBy: text("lastModifiedBy").notNull(),
 
   // Timestamps
   createdAt: timestamp("createdAt", { mode: "date", precision: 3 })
@@ -34,7 +32,7 @@ export const organizations = pgTable("organizations", {
 export const userRoleEnum = pgEnum("userRoleEnum", ["user", "admin"]);
 
 export const users = pgTable("users", {
-  id: uuid("id").primaryKey().defaultRandom(),
+  id: text("id").primaryKey(),
 
   // Data
   name: text("name").notNull(),
@@ -47,11 +45,8 @@ export const users = pgTable("users", {
   banReason: text("banReason"),
 
   // References
-  activeOrganizationId: uuid("activeOrganizationId")
-    .references(() => organizations.id)
-    .notNull(),
-  impersonatedBy: uuid("impersonatedBy"),
-  lastModifiedBy: uuid("lastModifiedBy"),
+  impersonatedBy: text("impersonatedBy"),
+  lastModifiedBy: text("lastModifiedBy"),
 
   // Timestamps
   createdAt: timestamp("createdAt", { mode: "date", precision: 3 })
@@ -63,7 +58,7 @@ export const users = pgTable("users", {
 });
 
 export const sessions = pgTable("sessions", {
-  id: uuid("id").primaryKey().defaultRandom(),
+  id: text("id").primaryKey(),
 
   // Data
   expiresAt: timestamp("expiresAt", { mode: "date", precision: 3 }).notNull(),
@@ -72,13 +67,12 @@ export const sessions = pgTable("sessions", {
   userAgent: text("userAgent"),
 
   // References
-  impersonatedBy: uuid("impersonatedBy").references(() => users.id),
-  userId: uuid("userId")
+  impersonatedBy: text("impersonatedBy").references(() => users.id),
+  userId: text("userId")
     .references(() => users.id)
     .notNull(),
-  activeOrganizationId: uuid("activeOrganizationId")
-    .references(() => organizations.id)
-    .notNull(),
+  activeOrganizationId: text("activeOrganizationId")
+    .references(() => organizations.id),
 
   // Timestamps
   createdAt: timestamp("createdAt", { mode: "date", precision: 3 })
@@ -90,7 +84,7 @@ export const sessions = pgTable("sessions", {
 });
 
 export const accounts = pgTable("accounts", {
-  id: uuid("id").primaryKey().defaultRandom(),
+  id: text("id").primaryKey(),
 
   // Data
   scope: text("scope"),
@@ -110,7 +104,7 @@ export const accounts = pgTable("accounts", {
 
   // References
   accountId: text("accountId").notNull().unique(),
-  userId: uuid("userId")
+  userId: text("userId")
     .references(() => users.id)
     .notNull(),
 
@@ -124,7 +118,7 @@ export const accounts = pgTable("accounts", {
 });
 
 export const verifications = pgTable("verifications", {
-  id: uuid("id").primaryKey().defaultRandom(),
+  id: text("id").primaryKey(),
 
   identifier: text("identifier").notNull().unique(),
   value: text("value").notNull(),
@@ -149,20 +143,20 @@ export const organizationRoleEnum = pgEnum("organizationRoleEnum", [
 ]);
 
 export const members = pgTable("members", {
-  id: uuid("id").primaryKey().defaultRandom(),
+  id: text("id").primaryKey(),
 
   // Data
   role: organizationRoleEnum("role").notNull().default("member"),
   version: integer("version").default(1).notNull(),
 
   // References
-  userId: uuid("userId")
+  userId: text("userId")
     .references(() => users.id)
     .notNull(),
-  lastModifiedBy: uuid("lastModifiedBy")
+  lastModifiedBy: text("lastModifiedBy")
     .references(() => users.id)
     .notNull(),
-  organizationId: uuid("organizationId")
+  organizationId: text("organizationId")
     .references(() => organizations.id)
     .notNull(),
 
@@ -176,7 +170,7 @@ export const members = pgTable("members", {
 });
 
 export const invitations = pgTable("invitations", {
-  id: uuid("id").primaryKey().defaultRandom(),
+  id: text("id").primaryKey(),
 
   // Data
   email: text("email").notNull(),
@@ -188,13 +182,13 @@ export const invitations = pgTable("invitations", {
   token: text("token").notNull(),
 
   // References
-  inviterId: uuid("inviterId")
+  inviterId: text("inviterId")
     .references(() => users.id)
     .notNull(),
-  organizationId: uuid("organizationId")
+  organizationId: text("organizationId")
     .references(() => organizations.id)
     .notNull(),
-  lastModifiedBy: uuid("lastModifiedBy")
+  lastModifiedBy: text("lastModifiedBy")
     .references(() => users.id)
     .notNull(),
 

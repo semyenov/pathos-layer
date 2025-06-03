@@ -1,5 +1,6 @@
 import { eq } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
+import type { Builder } from '../builder';
 
 export function addTemplateTypes(builder: Builder) {
   const TemplateFieldTypeEnumType = builder.enumType('TemplateFieldTypeEnum', {
@@ -101,8 +102,8 @@ export function addTemplateTypes(builder: Builder) {
   const FormStatusEnumType = builder.enumType('FormStatus', {
     values: {
       draft: { value: 'draft' },
-      under_review: { value: 'under_review' },
-      needs_changes: { value: 'needs_changes' },
+      underReview: { value: 'underReview' },
+      needsChanges: { value: 'needsChanges' },
       approved: { value: 'approved' },
       rejected: { value: 'rejected' },
     },
@@ -151,9 +152,9 @@ export function addTemplateTypes(builder: Builder) {
     fields: (t) => ({
       title: t.exposeString('title', { nullable: true }),
       description: t.exposeString('description', { nullable: true }),
-      status: t.expose('status', { type: FormStatusEnumType, nullable: true }),
-      createdAt: t.expose('createdAt', { type: 'Date', nullable: true }),
-      updatedAt: t.expose('updatedAt', { type: 'Date', nullable: true }),
+      createdAt: t.expose('createdAt', { type: 'Date' }),
+      updatedAt: t.expose('updatedAt', { type: 'Date' }),
+      status: t.expose('status', { type: FormStatusEnumType }),
       version: t.exposeInt('version', { nullable: true }),
       template: t.field({
         type: TemplateType,
@@ -301,6 +302,9 @@ export function addTemplateTypes(builder: Builder) {
           status: 'draft' as const,
           updatedAt: new Date(),
           templateId: args.input.templateId,
+          lastModifiedBy: context.member.id,
+          executorMemberId: context.member.id,
+          createdAt: new Date(),
         });
 
         // Create the form fields
@@ -308,15 +312,20 @@ export function addTemplateTypes(builder: Builder) {
           await context.db.insert(tables.formFields).values(
             (
               args.input.fields.map(
-                field => ({
+                templateField => ({
                   id: randomUUID(),
+                  lastModifiedBy: context.member.id,
+                  templateFieldId: templateField.id ?? '',
+                  executorMemberId: context.member.id,
                   formId: formId,
-                  name: field.name,
-                  type: field.type,
-                  required: field.required,
-                  order: field.order,
-                  options: field.options || null,
+                  name: templateField.name,
+                  type: templateField.type,
+                  required: templateField.required,
+                  order: templateField.order,
+                  options: templateField.options || null,
                   status: 'draft' as const,
+                  createdAt: new Date(),
+                  updatedAt: new Date(),
                 }))
             ))
         }
@@ -377,6 +386,8 @@ export function addTemplateTypes(builder: Builder) {
           templateId: args.input.templateId,
           status: 'draft' as const,
           updatedAt: new Date(),
+          lastModifiedBy: context.member.id,
+          executorMemberId: context.member.id,
         });
 
         // Create the form fields from template fields
@@ -384,6 +395,8 @@ export function addTemplateTypes(builder: Builder) {
           await context.db.insert(tables.formFields).values(
             template.fields.map((templateField) => ({
               id: randomUUID(),
+              lastModifiedBy: context.member.id,
+              executorMemberId: context.member.id,
               formId: formId,
               name: templateField.name,
               type: templateField.type as unknown as 'number' | 'date' | 'text' | 'textarea' | 'select' | 'checkbox' | 'radio' | 'file',
@@ -559,11 +572,12 @@ export function addTemplateTypes(builder: Builder) {
           id: templateId,
           name: args.input.name,
           description: args.input.description || null,
-          createdAt: new Date(),
-          updatedAt: new Date(),
           lastModifiedBy: context.member?.id,
+          creatorMemberId: context.member?.id,
           organizationId: context.session?.activeOrganizationId || 'default',
           version: 1,
+          createdAt: new Date(),
+          updatedAt: new Date(),
         });
 
         // Create the form template fields
@@ -579,6 +593,9 @@ export function addTemplateTypes(builder: Builder) {
               options: field.options || null,
               defaultValue: field.defaultValue || null,
               validationRules: field.validationRules || null,
+              lastModifiedBy: context.member?.id,
+              createdAt: new Date(),
+              updatedAt: new Date(),
             }))
           );
         }
@@ -628,8 +645,8 @@ export function addTemplateTypes(builder: Builder) {
         // Update template basic info
         const updatedTemplate = await context.db.update(tables.templates)
           .set({
-            updatedAt: new Date(),
             lastModifiedBy: context.member?.id || 'default',
+            updatedAt: new Date(),
             version: template.version + 1,
             name: args.input.name || template.name,
             description: args.input.description || template.description,
@@ -659,6 +676,7 @@ export function addTemplateTypes(builder: Builder) {
               options: field.options || null,
               defaultValue: field.defaultValue || null,
               validationRules: field.validationRules || null,
+              lastModifiedBy: context.member?.id,
             }))
           );
         }

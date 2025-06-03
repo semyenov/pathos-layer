@@ -1,22 +1,14 @@
-import type { Scalars, AuthScopes, Context } from './types';
+import type { AuthScopes, Context, Scalars } from "./types";
 
-import DrizzlePlugin from '@pothos/plugin-drizzle';
-import RelayPlugin from '@pothos/plugin-relay';
-import ScopeAuthPlugin from '@pothos/plugin-scope-auth';
-import TracingPlugin from '@pothos/plugin-tracing';
-import ValidationPlugin from '@pothos/plugin-validation';
-import WithInputPlugin from '@pothos/plugin-with-input';
-import { getTableConfig } from 'drizzle-orm/pg-core';
-import { DateResolver, JSONResolver, ObjectIDResolver } from 'graphql-scalars';
-import SchemaBuilder from '@pothos/core';
-
-import { addAuthTypes } from './types/auth';
-import { addOrganizationTypes } from './types/organization';
-import { addTemplateTypes } from './types/template';
-import { addCommentTypes } from './types/comment';
-import { addReviewFlowTypes } from './types/reviewFlow';
-import { addSessionTypes } from './types/session';
-import { addMemberTypes } from './types/member';
+import { DateResolver, JSONResolver, ObjectIDResolver } from "graphql-scalars";
+import DrizzlePlugin from "@pothos/plugin-drizzle";
+import RelayPlugin from "@pothos/plugin-relay";
+import ScopeAuthPlugin from "@pothos/plugin-scope-auth";
+import TracingPlugin from "@pothos/plugin-tracing";
+import ValidationPlugin from "@pothos/plugin-validation";
+import WithInputPlugin from "@pothos/plugin-with-input";
+import { getTableConfig } from "drizzle-orm/pg-core";
+import SchemaBuilder from "@pothos/core";
 
 const builder = new SchemaBuilder<{
   Defaults: "v4";
@@ -37,6 +29,18 @@ const builder = new SchemaBuilder<{
     },
   },
 
+  relay: {
+    cursorType: "String",
+    idFieldName: "id",
+    idFieldOptions: {
+      tracing: true,
+      description: "The ID of the node",
+    },
+    nodesFieldOptions: {
+      tracing: true,
+      nullable: false,
+    },
+  },
 
   drizzle: {
     client: useDb(),
@@ -65,8 +69,7 @@ const builder = new SchemaBuilder<{
         loggedIn: context.user !== null,
         admin: context.member?.role === "admin",
         organization: context.session?.activeOrganizationId !== null,
-        organizationOwner:
-          context.member?.role === "owner" &&
+        organizationOwner: context.member?.role === "owner" &&
           context.member?.organizationId ===
             context.session?.activeOrganizationId,
       };
@@ -83,16 +86,3 @@ builder.mutationType({ description: "The root mutation type" });
 
 export type Builder = typeof builder;
 export const useBuilder = () => builder;
-
-addSessionTypes(builder);
-addAuthTypes(builder);
-addMemberTypes(builder);
-addOrganizationTypes(builder);
-addTemplateTypes(builder);
-addCommentTypes(builder);
-addReviewFlowTypes(builder);
-
-const schema = builder.toSchema({ sortSchema: true });
-
-export type Schema = typeof schema;
-export const useSchema = (): Schema => schema;

@@ -1,4 +1,5 @@
 import { eq } from 'drizzle-orm';
+import type { Builder } from '../builder';
 
 export function addMemberTypes(builder: Builder) {
   const MemberRoleEnumType = builder.enumType('MemberRole', {
@@ -44,9 +45,13 @@ export function addMemberTypes(builder: Builder) {
         }
 
         await context.db.insert(tables.members).values({
+          id: crypto.randomUUID(),
           userId: args.input.userId,
           organizationId: args.input.organizationId,
           role: args.input.role as 'owner' | 'reviewer' | 'executor' | 'member',
+          lastModifiedBy: context.session.userId,
+          createdAt: new Date(),
+          updatedAt: new Date(),
         });
 
         const foundMember = await context.db.query.members.findFirst({

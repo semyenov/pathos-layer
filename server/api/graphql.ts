@@ -5,6 +5,7 @@ import { createYoga, isAsyncIterable, renderGraphiQL, type GraphQLParams } from 
 import { defineEventHandler, sendWebResponse, toWebRequest } from "h3";
 import { shouldRenderGraphiQL, getGraphQLParameters } from "@ardatan/graphql-helix";
 import { createFetch } from "@whatwg-node/fetch";
+import { useSchema } from "../graphql";
 
 const graphql = createYoga({
   id: "graphql",

@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm';
-
+import type { Builder } from '../builder';
 
 export function addReviewFlowTypes(builder: Builder) {
   const reviewFlowStatusEnum = builder.enumType('ReviewFlowStatus', {

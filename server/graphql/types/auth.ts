@@ -1,6 +1,7 @@
 import type { CookieSameSite } from "@whatwg-node/cookie-store";
 import { eq } from "drizzle-orm";
 import { hash } from "node:crypto";
+import type { Builder } from "../builder";
 
 const COOKIE_NAME = "auth-session";
 
@@ -13,15 +14,9 @@ export function addAuthTypes(builder: Builder) {
       providerId: t.exposeID("providerId"),
       accountId: t.exposeID("accountId"),
       accessToken: t.exposeString("accessToken", { nullable: true }),
-      accessTokenExpiresAt: t.expose("accessTokenExpiresAt", {
-        type: "Date",
-        nullable: true,
-      }),
+      accessTokenExpiresAt: t.expose("accessTokenExpiresAt", { type: "Date", nullable: true }),
       refreshToken: t.exposeString("refreshToken", { nullable: true }),
-      refreshTokenExpiresAt: t.expose("refreshTokenExpiresAt", {
-        type: "Date",
-        nullable: true,
-      }),
+      refreshTokenExpiresAt: t.expose("refreshTokenExpiresAt", { type: "Date", nullable: true }),
       idToken: t.exposeString("idToken", { nullable: true }),
       scope: t.exposeString("scope", { nullable: true }),
       createdAt: t.expose("createdAt", { type: "Date" }),
@@ -49,8 +44,8 @@ export function addAuthTypes(builder: Builder) {
       name: t.exposeString("name"),
       email: t.exposeString("email"),
       role: t.expose("role", { type: UserRoleEnumType, nullable: true }),
-      createdAt: t.expose("createdAt", { type: "Date", nullable: true }),
-      updatedAt: t.expose("updatedAt", { type: "Date", nullable: true }),
+      createdAt: t.expose("createdAt", { type: "Date" }),
+      updatedAt: t.expose("updatedAt", { type: "Date" }),
       members: t.relation("members", { nullable: true }),
       sessions: t.relation("sessions", { nullable: true }),
       accounts: t.relation("accounts", { nullable: true }),

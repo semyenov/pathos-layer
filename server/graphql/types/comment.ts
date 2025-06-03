@@ -1,4 +1,5 @@
 import { eq } from 'drizzle-orm';
+import type { Builder } from "../builder";
 
 export function addCommentTypes(builder: Builder) {
   // Define Comment type
@@ -128,13 +129,15 @@ export function addCommentTypes(builder: Builder) {
         }
 
         await context.db.insert(tables.comments).values({
-          content: args.input.content,
-          reviewFlowId: args.input.reviewFlowId,
-          formFieldId: args.input.formFieldId ?? null,
+          id: crypto.randomUUID(),
+          formId: args.input.formFieldId ?? '',
+          lastModifiedBy: membership.id,
           memberId: membership.id,
+          reviewFlowId: args.input.reviewFlowId,
           createdAt: new Date(),
           updatedAt: new Date(),
-          id: crypto.randomUUID(),
+          content: args.input.content,
+          formFieldId: args.input.formFieldId ?? '',
         });
 
         const foundComment = await context.db.query.comments.findFirst({
