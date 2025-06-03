@@ -22,5 +22,5 @@ export const useDb = (): DB => db
 export type DrizzleRelations = typeof relationsSchema;
 export type DrizzleTables = typeof tablesSchema;
 
-export const relations = relationsSchema  ;
+export const relations = relationsSchema;
 export const tables = tablesSchema;

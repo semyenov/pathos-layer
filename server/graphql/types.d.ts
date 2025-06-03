@@ -6,7 +6,7 @@ import type {
   User,
   Member,
   Organization,
-} from '../auth';
+} from '../utils/auth';
 
 
 export interface Context {

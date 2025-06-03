@@ -1,4 +1,5 @@
 import { eq } from 'drizzle-orm';
+import type { Builder } from '../builder';
 
 export function addOrganizationTypes(builder: Builder) {
   // Define Organization type
@@ -133,10 +134,12 @@ export function addOrganizationTypes(builder: Builder) {
         // Create the organization
         await db.insert(tables.organizations).values({
           id: organizationId,
+          ownerId: user.id,
           name: args.input.name,
           slug: args.input.slug || 'default-slug',
           logo: args.input.logo || 'default-logo',
           createdAt: new Date(),
+          lastModifiedBy: user.id,
           metadata: JSON.stringify({}),
         });
 
@@ -267,6 +270,8 @@ export function addOrganizationTypes(builder: Builder) {
           role: args.input.role as 'owner' | 'reviewer' | 'executor' | 'member',
           status: 'pending',
           expiresAt: expirationDate,
+          lastModifiedBy: context.member.id,
+          token: crypto.randomUUID(),
         });
 
         return true;

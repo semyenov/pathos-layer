@@ -65,13 +65,14 @@ const builder = new SchemaBuilder<{
     runScopesOnType: true,
 
     authScopes: async (context) => {
+      console.log(context.user);
       return {
         loggedIn: context.user !== null,
-        admin: context.member?.role === "admin",
+        admin: context.user?.role === "admin",
         organization: context.session?.activeOrganizationId !== null,
         organizationOwner: context.member?.role === "owner" &&
           context.member?.organizationId ===
-            context.session?.activeOrganizationId,
+          context.session?.activeOrganizationId,
       };
     },
   },

@@ -21,6 +21,7 @@ export function addMemberTypes(builder: Builder) {
       userId: t.exposeID('userId', { nullable: true }),
       organizationId: t.exposeID('organizationId', { nullable: true }),
       organization: t.relation('organization', { nullable: true }),
+      lastModifiedBy: t.exposeID('lastModifiedBy', { nullable: true }),
     }),
   });
 
@@ -33,11 +34,13 @@ export function addMemberTypes(builder: Builder) {
   });
 
   const createMemberMutation = builder.mutationField('createMember', (t) =>
-
     t.field({
       type: MemberType,
       args: {
-        input: t.arg({ type: CreateMemberInputType, required: true }),
+        input: t.arg({
+          type: CreateMemberInputType,
+          required: true
+        }),
       },
       resolve: async (_, args, context) => {
         if (!context.session?.userId || !context.session?.activeOrganizationId) {

@@ -16,6 +16,7 @@
         "@pothos/plugin-validation": "^3.10.2",
         "@pothos/plugin-with-input": "^4.1.1",
         "@whatwg-node/cookie-store": "^0.2.3",
+        "@whatwg-node/server-plugin-cookies": "^1.0.5",
         "better-auth": "^1.2.8",
         "drizzle-kit": "^1.0.0-beta.1-c0277c0",
         "drizzle-orm": "^1.0.0-beta.1-c0277c0",
@@ -805,6 +806,8 @@
     "@whatwg-node/promise-helpers": ["@whatwg-node/promise-helpers@1.3.2", "", { "dependencies": { "tslib": "^2.6.3" } }, "sha512-Nst5JdK47VIl9UcGwtv2Rcgyn5lWtZ0/mhRQ4G8NN2isxpq2TO30iqHzmwoJycjWuyUfg3GFXqP/gFHXeV57IA=="],
 
     "@whatwg-node/server": ["@whatwg-node/server@0.10.10", "", { "dependencies": { "@envelop/instrumentation": "^1.0.0", "@whatwg-node/disposablestack": "^0.0.6", "@whatwg-node/fetch": "^0.10.8", "@whatwg-node/promise-helpers": "^1.3.2", "tslib": "^2.6.3" } }, "sha512-GwpdMgUmwIp0jGjP535YtViP/nnmETAyHpGPWPZKdX++Qht/tSLbGXgFUMSsQvEACmZAR1lAPNu2CnYL1HpBgg=="],
+
+    "@whatwg-node/server-plugin-cookies": ["@whatwg-node/server-plugin-cookies@1.0.5", "", { "dependencies": { "@whatwg-node/cookie-store": "^0.2.2", "@whatwg-node/server": "^0.10.0", "tslib": "^2.6.3" } }, "sha512-9WLknXeFzN5fNtpaY6fEAGs4IVYxZWKnSOSWtoTkZ3/CWZL+h34VL9QRzhV71YPc8MQ9Y1/5now1NbZVepKjWg=="],
 
     "abbrev": ["abbrev@3.0.1", "", {}, "sha512-AO2ac6pjRB3SJmGJo+v5/aK6Omggp6fsLrs6wN9bd35ulu4cCwaAU9+7ZhXjeqHVkaHThLuzH0nZr0YpCDhygg=="],
 

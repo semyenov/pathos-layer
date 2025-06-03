@@ -259,12 +259,12 @@ export function addReviewFlowTypes(builder: Builder) {
           id: reviewFlowId,
           formId: args.input.formId as string,
           organizationId: context.session.activeOrganizationId,
-          status: 'open',
+          status: 'open' as const,
           createdAt: new Date(),
           updatedAt: new Date(),
-          lastModifiedBy: context.member?.id || null,
+          lastModifiedBy: context.user?.id as string,
           version: 1,
-        } as const;
+        };
 
         await context.db
           .insert(tables.reviewFlows)
@@ -274,7 +274,11 @@ export function addReviewFlowTypes(builder: Builder) {
         const foundReviewFlow = await context.db.query.reviewFlows.findFirst({
           where: { id: reviewFlowId },
           with: {
-            comments: true,
+            comments: {
+              orderBy: {
+                createdAt: 'asc',
+              },
+            },
             form: true,
             organization: true,
           },

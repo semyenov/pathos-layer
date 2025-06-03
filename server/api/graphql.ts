@@ -1,18 +1,23 @@
 import type { ServerAdapterInitialContext } from "@whatwg-node/server";
-import type { ExecutionResult } from "graphql";
-
-import { createYoga, isAsyncIterable, renderGraphiQL, type GraphQLParams } from "graphql-yoga";
+import { useCookies } from "@whatwg-node/server-plugin-cookies";
+import { createYoga, renderGraphiQL, createPubSub } from "graphql-yoga";
 import { defineEventHandler, sendWebResponse, toWebRequest } from "h3";
-import { shouldRenderGraphiQL, getGraphQLParameters } from "@ardatan/graphql-helix";
+import { shouldRenderGraphiQL, } from "@ardatan/graphql-helix";
 import { createFetch } from "@whatwg-node/fetch";
-import { useSchema } from "../graphql";
+import { type Context, useSchema } from "../graphql";
+
+declare module "h3" {
+  interface H3EventContext extends Context, ServerAdapterInitialContext { }
+}
+
+declare module "graphql-yoga" {
+  interface YogaContext extends Context, ServerAdapterInitialContext { }
+}
 
 const graphql = createYoga({
   id: "graphql",
 
-  graphqlEndpoint: "/api/graphql",
   graphiql: {
-    endpoint: "/api/graphql",
     title: "GraphQL Playground",
     defaultQuery: `# Welcome to GraphQL Playground!
 # Type queries into this side of the screen, and you will see
@@ -33,6 +38,9 @@ const graphql = createYoga({
     inputValueDeprecation: true,
     isHeadersEditorEnabled: true,
     editorTheme: "light",
+    shouldPersistHeaders: true,
+    schemaDescription: true,
+    commentDescriptions: true,
     experimentalFragmentVariables: true,
     useGETForQueries: true,
   },
@@ -49,95 +57,85 @@ const graphql = createYoga({
   },
 
   fetchAPI: createFetch({
-    useNodeFetch: true,
-    skipPonyfill: true,
+    useNodeFetch: false,
+    skipPonyfill: false,
   }),
+
+  plugins: [
+    useCookies(),
+    createPubSub(),
+  ],
+
   context: async (ctx) => {
     const db = useDb();
     const auth = useAuth();
+    const { cookieStore: cookies } = ctx.request;
 
-    const authSession = await auth.api.getSession(ctx.request);
-    if (!authSession) {
-      return {
-        ...ctx,
+    let user: User | null = null;
+    let session: Session | null = null;
+    let member: Member | null = null;
+    let organization: Organization | null = null;
 
-        db,
-        auth,
+    const sessionData = await auth.api.getSession(ctx.request);
+    if (sessionData) {
+      session = sessionData.session;
+      user = sessionData.user;
 
-        user: null,
-        member: null,
-        session: null,
-        organization: null,
-      };
+      const activeOrganizationId = session.activeOrganizationId;
+      if (activeOrganizationId) {
+        organization = await db.query.organizations.findFirst({
+          where: {
+            id: activeOrganizationId,
+          },
+        }) ?? null;
+
+        member = await db.query.members.findFirst({
+          where: {
+            userId: user.id,
+            organizationId: activeOrganizationId,
+          },
+        }) ?? null;
+      }
     }
-
-    const session = authSession.session;
-    const user = authSession.user;
-    const member = user?.id
-      ? await db.query.members.findFirst({
-          where: { userId: user.id, organizationId: session.activeOrganizationId ?? undefined },
-        })
-      : null;
 
     return {
       ...ctx,
 
       db,
       auth,
+      cookies,
 
-      user: user ?? null,
-      member: member ?? null,
-      session: session ?? null,
-      organization: member?.organizationId ?? null,
+      user,
+      session,
+      member,
+      organization,
     };
   },
 });
 
+
 export default defineEventHandler(async (event) => {
   const request = toWebRequest(event);
-
   if (shouldRenderGraphiQL(request)) {
     const graphiql = renderGraphiQL({
       endpoint: "/api/graphql",
+      shouldPersistHeaders: true,
+      credentials: "include",
     });
 
-    const response = new Response(graphiql, request);
-    response.headers.set("Content-Type", "text/html");
-
-    return sendWebResponse(event, response);
-  }
-
-  const params = (await getGraphQLParameters(request)) as GraphQLParams;
-  const context = event.context as ServerAdapterInitialContext;
-  const result = await graphql.getResultForParams({ params, request }, context);
-
-  if (isAsyncIterable(result)) {
-    const { data, errors, extensions } = result as unknown as ExecutionResult;
-
-    if (errors) {
-      const response = new Response(JSON.stringify({ errors }), {
-        status: 400,
-        statusText: "Bad Request",
-        headers: { "Content-Type": "application/json" },
-      });
-
-      return sendWebResponse(event, response);
-    }
-
-    const response = new Response(JSON.stringify({ data, extensions }), {
+    const response = new Response(graphiql, {
       status: 200,
       statusText: "OK",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "text/html" },
     });
 
     return sendWebResponse(event, response);
   }
 
-  const response = new Response(JSON.stringify(result), {
-    status: 200,
-    statusText: "OK",
-    headers: { "Content-Type": "application/json" },
-  });
+  const response = await graphql.handleRequest(
+    request,
+    event.context,
+  );
 
   return sendWebResponse(event, response);
 });

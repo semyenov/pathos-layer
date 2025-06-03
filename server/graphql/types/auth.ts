@@ -1,9 +1,8 @@
 import type { CookieSameSite } from "@whatwg-node/cookie-store";
-import { eq } from "drizzle-orm";
-import { hash } from "node:crypto";
 import type { Builder } from "../builder";
 
-const COOKIE_NAME = "auth-session";
+import { eq } from "drizzle-orm";
+import { hash } from "node:crypto";
 
 export function addAuthTypes(builder: Builder) {
   const AccountType = builder.drizzleNode("accounts", {
@@ -12,7 +11,6 @@ export function addAuthTypes(builder: Builder) {
     fields: (t) => ({
       userId: t.exposeID("userId"),
       providerId: t.exposeID("providerId"),
-      accountId: t.exposeID("accountId"),
       accessToken: t.exposeString("accessToken", { nullable: true }),
       accessTokenExpiresAt: t.expose("accessTokenExpiresAt", { type: "Date", nullable: true }),
       refreshToken: t.exposeString("refreshToken", { nullable: true }),
@@ -139,7 +137,32 @@ export function addAuthTypes(builder: Builder) {
           throw new Error("Invalid email or password");
         }
 
-        return session.token;
+        const { authCookies: { sessionToken: { name, options } } } = await context.auth.$context;
+        const { token } = await context.auth.api.signInEmail({
+          body: {
+            email: input.email,
+            password: input.password,
+          },
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (!token) {
+          throw new Error("Failed to login");
+        }
+
+        await context.cookies.set({
+          ...options,
+
+          name: name,
+          value: token ?? "",
+          domain: options.domain ?? null,
+          expires: options.expires ?? null,
+          sameSite: options.sameSite as CookieSameSite,
+        });
+
+        return token;
       },
     }),
   );
@@ -147,12 +170,12 @@ export function addAuthTypes(builder: Builder) {
   // Register mutation
   const registerMutation = builder.mutationField("register", (t) =>
     t.field({
-      type: UserType,
+      type: "String",
       args: {
         input: t.arg({ type: RegisterInputType, required: true }),
       },
       resolve: async (_, { input }, context) => {
-        const { user, token } = await context.auth.api.signUpEmail({
+        const { token } = await context.auth.api.signUpEmail({
           body: {
             email: input.email,
             password: input.password,
@@ -163,33 +186,30 @@ export function addAuthTypes(builder: Builder) {
           },
         });
 
-        if (!user || !token) {
+        if (!token) {
           throw new Error("Failed to create user");
         }
 
-        const foundUser = await context.db.query.users.findFirst({
-          where: { id: user.id },
-        });
-
-        if (!foundUser) {
-          throw new Error("Failed to create user");
-        }
-
-        const authContext = await context.auth.$context;
-        const { attributes, name } = authContext.createAuthCookie(COOKIE_NAME);
+        const {
+          authCookies: {
+            sessionToken: {
+              name,
+              options,
+            }
+          }
+        } = await context.auth.$context;
 
         await context.cookies.set({
+          ...options,
+
           name: name,
-          value: token ?? "",
-          domain: attributes.domain ?? null,
-          expires: attributes.expires ?? null,
-          httpOnly: attributes.httpOnly,
-          path: attributes.path,
-          secure: attributes.secure,
-          sameSite: attributes.sameSite as CookieSameSite,
+          value: token,
+          domain: options.domain ?? null,
+          expires: options.expires ?? null,
+          sameSite: options.sameSite as CookieSameSite,
         });
 
-        return foundUser;
+        return token;
       },
     }),
   );
@@ -206,7 +226,11 @@ export function addAuthTypes(builder: Builder) {
         });
 
         if (session.success) {
-          context.cookies.delete(COOKIE_NAME);
+          const {
+            authCookies: { sessionToken: { name } }
+          } = await context.auth.$context;
+          context.cookies.delete(name);
+
           return true;
         }
 
@@ -258,7 +282,7 @@ export function addAuthTypes(builder: Builder) {
         }
 
         const {
-            name,
+          name,
           email,
           password,
           image,

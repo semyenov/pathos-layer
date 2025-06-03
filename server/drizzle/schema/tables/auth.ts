@@ -38,7 +38,7 @@ export const users = pgTable("users", {
   name: text("name").notNull(),
   email: text("email").notNull().unique(),
   emailVerified: boolean("emailVerified").default(false).notNull(),
-  image: text("image"),
+  image: text("image").default("https://ui-avatars.com/api/?name=default"),
   role: userRoleEnum("role").notNull().default("user"),
   banned: boolean("banned"),
   banExpires: timestamp("banExpires", { mode: "date", precision: 3 }),
@@ -63,14 +63,15 @@ export const sessions = pgTable("sessions", {
   // Data
   expiresAt: timestamp("expiresAt", { mode: "date", precision: 3 }).notNull(),
   ipAddress: text("ipAddress"),
-  token: text("token").notNull(),
+  token: text("token").notNull().unique(),
   userAgent: text("userAgent"),
 
   // References
-  impersonatedBy: text("impersonatedBy").references(() => users.id),
   userId: text("userId")
     .references(() => users.id)
     .notNull(),
+  impersonatedBy: text("impersonatedBy")
+    .references(() => users.id),
   activeOrganizationId: text("activeOrganizationId")
     .references(() => organizations.id),
 
@@ -91,6 +92,7 @@ export const accounts = pgTable("accounts", {
   accessToken: text("accessToken"),
   idToken: text("idToken"),
   password: text("password"),
+  accountId: text("accountId"),
   providerId: text("providerId").notNull(),
   refreshToken: text("refreshToken"),
   accessTokenExpiresAt: timestamp("accessTokenExpiresAt", {
@@ -103,7 +105,6 @@ export const accounts = pgTable("accounts", {
   }),
 
   // References
-  accountId: text("accountId").notNull().unique(),
   userId: text("userId")
     .references(() => users.id)
     .notNull(),
@@ -120,8 +121,8 @@ export const accounts = pgTable("accounts", {
 export const verifications = pgTable("verifications", {
   id: text("id").primaryKey(),
 
-  identifier: text("identifier").notNull().unique(),
   value: text("value").notNull(),
+  identifier: text("identifier").notNull().unique(),
   expiresAt: timestamp("expiresAt", { mode: "date", precision: 3 })
     .defaultNow()
     .notNull(),
@@ -176,20 +177,20 @@ export const invitations = pgTable("invitations", {
   email: text("email").notNull(),
   role: organizationRoleEnum("role").notNull().default("member"),
   status: text("status").notNull().default("pending"),
+  token: text("token").notNull(),
   expiresAt: timestamp("expiresAt", { mode: "date", precision: 3 })
     .defaultNow()
     .notNull(),
-  token: text("token").notNull(),
 
   // References
   inviterId: text("inviterId")
     .references(() => users.id)
     .notNull(),
-  organizationId: text("organizationId")
-    .references(() => organizations.id)
-    .notNull(),
   lastModifiedBy: text("lastModifiedBy")
     .references(() => users.id)
+    .notNull(),
+  organizationId: text("organizationId")
+    .references(() => organizations.id)
     .notNull(),
 
   // Timestamps
