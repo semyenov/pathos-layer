@@ -1,3 +1,4 @@
+import type { Scalars, AuthScopes, Context } from './types';
 
 import DrizzlePlugin from '@pothos/plugin-drizzle';
 import RelayPlugin from '@pothos/plugin-relay';
@@ -7,7 +8,6 @@ import ValidationPlugin from '@pothos/plugin-validation';
 import WithInputPlugin from '@pothos/plugin-with-input';
 import { getTableConfig } from 'drizzle-orm/pg-core';
 import { DateResolver, JSONResolver, ObjectIDResolver } from 'graphql-scalars';
-import type { Scalars, AuthScopes, Context } from './types';
 import SchemaBuilder from '@pothos/core';
 
 import { addAuthTypes } from './types/auth';
@@ -18,28 +18,35 @@ import { addReviewFlowTypes } from './types/reviewFlow';
 import { addSessionTypes } from './types/session';
 import { addMemberTypes } from './types/member';
 
-const db = useDb();
-
 const builder = new SchemaBuilder<{
-  Defaults: 'v4';
+  Defaults: "v4";
   DefaultFieldNullability: false;
   Tracing: boolean | { formatMessage: (duration: number) => string };
   DrizzleRelations: DrizzleRelations;
-  DrizzleTables: typeof tables;
+  DrizzleTables: DrizzleTables;
   Context: Context;
   Scalars: Scalars;
   AuthScopes: AuthScopes;
 }>({
-  defaults: 'v4',
+  defaults: "v4",
   defaultFieldNullability: false,
+
+  withInput: {
+    typeOptions: {
+      name: (options) => `${options.parentTypeName}${options.fieldName}Input`,
+    },
+  },
+
+
   drizzle: {
-    client: db,
+    client: useDb(),
     relations: relations,
     skipDeferredFragments: true,
     defaultConnectionSize: 10,
     maxConnectionSize: 100,
     getTableConfig,
   },
+
   plugins: [
     TracingPlugin,
     DrizzlePlugin,
@@ -49,37 +56,30 @@ const builder = new SchemaBuilder<{
     RelayPlugin,
   ],
 
-
   scopeAuth: {
+    authorizeOnSubscribe: true,
+    runScopesOnType: true,
+
     authScopes: async (context) => {
       return {
-        loggedIn: !!context.session,
-        admin: context.member?.role === 'admin',
-        organization: context.member?.organizationId !== null,
+        loggedIn: context.user !== null,
+        admin: context.member?.role === "admin",
+        organization: context.session?.activeOrganizationId !== null,
+        organizationOwner:
+          context.member?.role === "owner" &&
+          context.member?.organizationId ===
+            context.session?.activeOrganizationId,
       };
     },
   },
 });
 
-builder.addScalarType('JSON', JSONResolver);
-builder.addScalarType('Date', DateResolver);
 builder.addScalarType("ID", ObjectIDResolver);
+builder.addScalarType("Date", DateResolver);
+builder.addScalarType("JSON", JSONResolver);
 
-builder.queryType({
-  description: 'The root query type',
-});
-
-builder.mutationType({
-  description: 'The root mutation type',
-});
-
-builder.queryType({
-  description: 'The root query type',
-});
-
-builder.mutationType({
-  description: 'The root mutation type',
-});
+builder.queryType({ description: "The root query type" });
+builder.mutationType({ description: "The root mutation type" });
 
 export type Builder = typeof builder;
 export const useBuilder = () => builder;

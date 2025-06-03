@@ -2,7 +2,7 @@ import { defineConfig } from 'drizzle-kit'
 
 export default defineConfig({
   dialect: 'postgresql',
-  schema: './server/utils/schema',
+  schema: './server/utils/schema/tables',
   out: './server/utils/migrations',
   driver: 'pglite',
   dbCredentials: {

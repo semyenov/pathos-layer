@@ -1,9 +1,12 @@
 import type { CookieStore } from '@whatwg-node/cookie-store';
-import type { Member, Organization } from 'better-auth/plugins/organization';
 import type { DB } from '../db';
-import type { Auth } from '../auth';
-import type { Session } from '../auth';
-import type { User } from '../auth';
+import type {
+  Auth,
+  Session,
+  User,
+  Member,
+  Organization,
+} from '../auth';
 
 export interface Context {
   db: DB;

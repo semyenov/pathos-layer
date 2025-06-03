@@ -5,38 +5,16 @@ import {
   pgTable,
   text,
   timestamp,
-  uuid
+  uuid,
 } from "drizzle-orm/pg-core";
 
-import auth from "./auth";
+import {
+  members,
+  organizations,
+  users
+} from "./auth";
 
-export const formStatus = pgEnum("FormStatus", [
-  "draft",
-  "under_review",
-  "needs_changes",
-  "approved",
-  "rejected",
-]);
-
-const forms = pgTable("forms", {
-  id: uuid("id").primaryKey().defaultRandom(),
-
-  title: text("title").notNull(),
-  description: text("description"),
-  status: formStatus("status").default("draft").notNull(),
-  version: integer("version").default(1).notNull(),
-
-  creatorMemberId: uuid("creatorMemberId").notNull().references(() => auth.members.id),
-  executorMemberId: uuid("executorMemberId").references(() => auth.members.id),
-  lastModifiedBy: uuid("lastModifiedBy").references(() => auth.users.id),
-  organizationId: uuid("organizationId").notNull().references(() => auth.organizations.id),
-  templateId: uuid("templateId").references(() => templates.id).notNull(),
-
-  createdAt: timestamp("createdAt", { mode: "date", precision: 3 }).notNull().defaultNow(),
-  updatedAt: timestamp("updatedAt", { mode: "date", precision: 3 }).notNull().defaultNow(),
-});
-
-const fieldType = pgEnum("FieldType", [
+export const formFieldTypeEnum = pgEnum("FieldType", [
   "text",
   "textarea",
   "number",
@@ -47,46 +25,115 @@ const fieldType = pgEnum("FieldType", [
   "file",
 ]);
 
-const formFieldStatus = pgEnum("FormFieldStatus", [
+export const formFieldStatusEnum = pgEnum("FieldStatus", [
   "draft",
   "rejected",
   "approved",
 ]);
 
-const formFields = pgTable("form_fields", {
-  id: uuid("id").primaryKey().defaultRandom(),
+export const formFields = pgTable("form_fields", {
+  id: uuid("id")
+    .primaryKey()
+    .defaultRandom(),
 
   name: text("name").notNull(),
   options: text("options"),
   order: integer("order").notNull(),
   required: boolean("required").default(false).notNull(),
-  status: formFieldStatus("status").default("draft").notNull(),
-  type: fieldType("type").notNull(),
+  status: formFieldStatusEnum("status").default("draft").notNull(),
+  type: formFieldTypeEnum("type").default("text").notNull(),
   validationRules: text("validationRules"),
+  description: text("description"),
   value: text("value"),
 
-  formId: uuid("formId").notNull().references(() => forms.id, { onDelete: "cascade" }),
-  templateFieldId: uuid("templateFieldId").references(() => templateFields.id),
+  formId: uuid("formId")
+    .references(() => forms.id, { onDelete: "cascade" })
+    .notNull(),
+  templateFieldId: uuid("templateFieldId")
+    .references(() => templateFields.id, { onDelete: "cascade" })
+    .notNull(),
+  lastModifiedBy: uuid("lastModifiedBy")
+    .references(() => users.id, { onDelete: "cascade" })
+    .notNull(),
 
-  createdAt: timestamp("createdAt", { mode: "date", precision: 3 }).notNull().defaultNow(),
-  updatedAt: timestamp("updatedAt", { mode: "date", precision: 3 }).notNull().defaultNow(),
+  createdAt: timestamp("createdAt", { mode: "date", precision: 3 })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updatedAt", { mode: "date", precision: 3 })
+    .notNull()
+    .defaultNow(),
 });
 
-const templates = pgTable("form_templates", {
+export const formStatusEnum = pgEnum("FormStatus", [
+  "draft",
+  "underReview",
+  "needsChanges",
+  "approved",
+  "rejected",
+]);
+
+export const forms = pgTable("forms", {
+  id: uuid("id").primaryKey().defaultRandom(),
+
+  title: text("title").notNull(),
+  description: text("description"),
+  status: formStatusEnum("status").default("draft").notNull(),
+  version: integer("version").default(1).notNull(),
+
+  // References
+  creatorMemberId: uuid("creatorMemberId")
+    .references(() => members.id, { onDelete: "cascade" })
+    .notNull(),
+  executorMemberId: uuid("executorMemberId")
+    .references(() => members.id, { onDelete: "cascade" })
+    .notNull(),
+  lastModifiedBy: uuid("lastModifiedBy")
+    .references(() => users.id, { onDelete: "cascade" })
+    .notNull(),
+  organizationId: uuid("organizationId")
+    .references(() => organizations.id, { onDelete: "cascade" })
+    .notNull(),
+  templateId: uuid("templateId")
+    .references(() => templates.id, { onDelete: "cascade" })
+    .notNull(),
+
+  // Timestamps
+  createdAt: timestamp("createdAt", { mode: "date", precision: 3 })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updatedAt", { mode: "date", precision: 3 })
+    .notNull()
+    .defaultNow(),
+});
+
+export const templates = pgTable("form_templates", {
   id: uuid("id").primaryKey().defaultRandom(),
 
   description: text("description"),
-  name: text("name").notNull(),
+  name: text("name").unique().notNull(),
   version: integer("version").default(1).notNull(),
 
-  organizationId: uuid("organizationId").notNull().references(() => auth.organizations.id),
-  lastModifiedBy: uuid("lastModifiedBy").references(() => auth.users.id),
+  // References
+  creatorMemberId: uuid("creatorMemberId")
+    .references(() => members.id, { onDelete: "cascade" })
+    .notNull(),
+  lastModifiedBy: uuid("lastModifiedBy")
+    .references(() => users.id, { onDelete: "cascade" })
+    .notNull(),
+  organizationId: uuid("organizationId")
+    .references(() => organizations.id, { onDelete: "cascade" })
+    .notNull(),
 
-  createdAt: timestamp("createdAt", { mode: "date", precision: 3 }).notNull().defaultNow(),
-  updatedAt: timestamp("updatedAt", { mode: "date", precision: 3 }).notNull().defaultNow(),
+  // Timestamps
+  createdAt: timestamp("createdAt", { mode: "date", precision: 3 })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updatedAt", { mode: "date", precision: 3 })
+    .notNull()
+    .defaultNow(),
 });
 
-const templateFields = pgTable("form_template_fields", {
+export const templateFields = pgTable("form_template_fields", {
   id: uuid("id").primaryKey().defaultRandom(),
 
   defaultValue: text("defaultValue"),
@@ -94,71 +141,147 @@ const templateFields = pgTable("form_template_fields", {
   options: text("options"),
   order: integer("order").notNull(),
   required: boolean("required").default(false).notNull(),
-  type: fieldType("type").notNull(),
+  type: formFieldTypeEnum("type").notNull(),
   validationRules: text("validationRules"),
+  value: text("value"),
+  description: text("description"),
 
-  templateId: uuid("templateId").notNull().references(() => templates.id, { onDelete: "cascade" }),
+  templateId: uuid("templateId")
+    .references(() => templates.id, { onDelete: "cascade" })
+    .notNull(),
+  lastModifiedBy: uuid("lastModifiedBy")
+    .references(() => users.id, { onDelete: "cascade" })
+    .notNull(),
 
-  createdAt: timestamp("createdAt", { mode: "date", precision: 3 }).notNull().defaultNow(),
-  updatedAt: timestamp("updatedAt", { mode: "date", precision: 3 }).notNull().defaultNow(),
+  // Timestamps
+  createdAt: timestamp("createdAt", { mode: "date", precision: 3 })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updatedAt", { mode: "date", precision: 3 })
+    .notNull()
+    .defaultNow(),
 });
 
-const formHistories = pgTable("form_histories", {
+export const formHistories = pgTable("form_histories", {
   id: uuid("id").primaryKey().defaultRandom(),
 
   data: text("data"),
-  status: formStatus("status").notNull(),
+  status: formStatusEnum("status").notNull(),
   version: integer("version").default(1).notNull(),
 
-  formId: uuid("formId").notNull().references(() => forms.id, { onDelete: "cascade" }),
-  memberId: uuid("memberId").notNull().references(() => auth.members.id, { onDelete: "cascade" }),
+  // References
+  formId: uuid("formId")
+    .references(() => forms.id, { onDelete: "cascade" })
+    .notNull(),
+  memberId: uuid("memberId")
+    .references(() => members.id, { onDelete: "cascade" })
+    .notNull(),
 
-  createdAt: timestamp("createdAt", { mode: "date", precision: 3 }).notNull().defaultNow(),
-  updatedAt: timestamp("updatedAt", { mode: "date", precision: 3 }).notNull().defaultNow(),
+  // Timestamps
+  createdAt: timestamp("createdAt", { mode: "date", precision: 3 })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updatedAt", { mode: "date", precision: 3 })
+    .notNull()
+    .defaultNow(),
 });
 
-const reviewFlowStatus = pgEnum("ReviewFlowStatus", [
-  "open",
-  "closed",
-]);
+export const reviewFlowStatusEnum = pgEnum("ReviewFlowStatus", ["open", "closed"]);
 
-const reviewFlows = pgTable("review_flows", {
+export const reviewFlows = pgTable("review_flows", {
   id: uuid("id").primaryKey().defaultRandom(),
 
-  status: reviewFlowStatus("status").default("open").notNull(),
+  status: reviewFlowStatusEnum("status").default("open").notNull(),
   version: integer("version").default(1).notNull(),
 
-  formId: uuid("formId").notNull().references(() => forms.id, { onDelete: "cascade" }),
-  organizationId: uuid("organizationId").notNull().references(() => auth.organizations.id),
-  lastModifiedBy: uuid("lastModifiedBy").references(() => auth.users.id),
+  // References
+  formId: uuid("formId")
+    .references(() => forms.id, { onDelete: "cascade" })
+    .notNull(),
+  organizationId: uuid("organizationId")
+    .references(() => organizations.id, { onDelete: "cascade" })
+    .notNull(),
+  lastModifiedBy: uuid("lastModifiedBy")
+    .references(() => users.id, { onDelete: "cascade" })
+    .notNull(),
 
-  createdAt: timestamp("createdAt", { mode: "date", precision: 3 }).notNull().defaultNow(),
-  updatedAt: timestamp("updatedAt", { mode: "date", precision: 3 }).notNull().defaultNow(),
+  // Timestamps
+  createdAt: timestamp("createdAt", { mode: "date", precision: 3 })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updatedAt", { mode: "date", precision: 3 })
+    .notNull()
+    .defaultNow(),
 });
 
-const comments = pgTable("comments", {
+export const comments = pgTable("comments", {
   id: uuid("id").primaryKey().defaultRandom(),
 
   content: text("content").notNull(),
 
-  memberId: uuid("memberId").notNull().references(() => auth.members.id, { onDelete: "cascade" }),
-  reviewFlowId: uuid("reviewFlowId").notNull().references(() => reviewFlows.id, { onDelete: "cascade" }),
-  formFieldId: uuid("formFieldId").references(() => formFields.id, { onDelete: "cascade" }),
+  // References
+  memberId: uuid("memberId")
+    .references(() => members.id, { onDelete: "cascade" })
+    .notNull(),
+  formId: uuid("formId")
+    .references(() => forms.id, { onDelete: "cascade" })
+    .notNull(),
+  formFieldId: uuid("formFieldId")
+    .references(() => formFields.id, { onDelete: "cascade" })
+    .notNull(),
+  reviewFlowId: uuid("reviewFlowId")
+    .references(() => reviewFlows.id, { onDelete: "cascade" })
+    .notNull(),
+  lastModifiedBy: uuid("lastModifiedBy")
+    .references(() => users.id, { onDelete: "cascade" })
+    .notNull(),
 
-  createdAt: timestamp("createdAt", { mode: "date", precision: 3 }).notNull().defaultNow(),
-  updatedAt: timestamp("updatedAt", { mode: "date", precision: 3 }).notNull().defaultNow(),
+  // Timestamps
+  createdAt: timestamp("createdAt", { mode: "date", precision: 3 })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updatedAt", { mode: "date", precision: 3 })
+    .notNull()
+    .defaultNow(),
 });
 
-const fileAccess = pgEnum("FileAccess", [
+export const fileShares = pgTable("file_shares", {
+  id: uuid("id").primaryKey().defaultRandom(),
+
+  expiresAt: timestamp("expiresAt", { mode: "date", precision: 3 }),
+
+  // References
+  memberId: uuid("memberId")
+    .references(() => members.id, { onDelete: "cascade" })
+    .notNull(),
+  formFieldId: uuid("formFieldId")
+    .references(() => formFields.id, { onDelete: "cascade" })
+    .notNull(),
+  fileId: uuid("fileId")
+    .references(() => files.id, { onDelete: "cascade" })
+    .notNull(),
+
+  // Timestamps
+  createdAt: timestamp("createdAt", { mode: "date", precision: 3 })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updatedAt", { mode: "date", precision: 3 })
+    .notNull()
+    .defaultNow(),
+});
+
+export const fileAccessLevelEnum = pgEnum("FileAccessLevel", [
   "private",
   "organization",
   "public",
 ]);
 
-const files = pgTable("files", {
+export const files = pgTable("files", {
   id: uuid("id").primaryKey().defaultRandom(),
 
-  accessLevel: fileAccess("accessLevel").default("organization").notNull(),
+  accessLevel: fileAccessLevelEnum("accessLevel")
+    .default("organization")
+    .notNull(),
   accessedAt: timestamp("accessedAt", { mode: "date", precision: 3 }),
   deleted: boolean("deleted").default(false).notNull(),
   description: text("description"),
@@ -168,13 +291,30 @@ const files = pgTable("files", {
   path: text("path").notNull(),
   size: integer("size").notNull(),
 
-  organizationId: uuid("organizationId").notNull().references(() => auth.organizations.id),
-  uploaderMemberId: uuid("uploaderMemberId").notNull().references(() => auth.members.id),
-  folderId: uuid("folderId").references(() => fileFolders.id),
-  lastModifiedBy: uuid("lastModifiedBy").references(() => auth.users.id),
+  // References
+  organizationId: uuid("organizationId")
+    .references(() => organizations.id, { onDelete: "cascade" })
+    .notNull(),
+  uploaderMemberId: uuid("uploaderMemberId")
+    .references(() => members.id, { onDelete: "cascade" })
+    .notNull(),
+  lastModifiedBy: uuid("lastModifiedBy")
+    .references(() => users.id, { onDelete: "cascade" })
+    .notNull(),
+  formFieldId: uuid("formFieldId")
+    .references(() => formFields.id, { onDelete: "cascade" })
+    .notNull(),
+  fileFolderId: uuid("fileFolderId")
+    .references(() => fileFolders.id, { onDelete: "cascade" })
+    .notNull(),
 
-  createdAt: timestamp("createdAt", { mode: "date", precision: 3 }).notNull().defaultNow(),
-  updatedAt: timestamp("updatedAt", { mode: "date", precision: 3 }).notNull().defaultNow(),
+  // Timestamps
+  createdAt: timestamp("createdAt", { mode: "date", precision: 3 })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updatedAt", { mode: "date", precision: 3 })
+    .notNull()
+    .defaultNow(),
 });
 
 export const fileFolders = pgTable("file_folders", {
@@ -183,50 +323,29 @@ export const fileFolders = pgTable("file_folders", {
   description: text("description"),
   level: integer("level").notNull(),
   name: text("name").notNull(),
-  parentId: uuid("parentId"),
   path: text("path"),
   version: integer("version").default(1).notNull(),
 
-  organizationId: uuid("organizationId").notNull().references(() => auth.organizations.id),
-  creatorMemberId: uuid("creatorMemberId").notNull().references(() => auth.members.id),
-  lastModifiedBy: uuid("lastModifiedBy").references(() => auth.users.id),
+  // References
+  parentId: uuid("parentId"),
+  organizationId: uuid("organizationId")
+    .references(() => organizations.id, { onDelete: "cascade" })
+    .notNull(),
+  creatorMemberId: uuid("creatorMemberId")
+    .references(() => members.id, { onDelete: "cascade" })
+    .notNull(),
+  lastModifiedBy: uuid("lastModifiedBy")
+    .references(() => users.id, { onDelete: "cascade" })
+    .notNull(),
+  formFieldId: uuid("formFieldId")
+    .references(() => formFields.id, { onDelete: "cascade" })
+    .notNull(),
 
-  createdAt: timestamp("createdAt", { mode: "date", precision: 3 }).notNull().defaultNow(),
-  updatedAt: timestamp("updatedAt", { mode: "date", precision: 3 }).notNull().defaultNow(),
+  // Timestamps
+  createdAt: timestamp("createdAt", { mode: "date", precision: 3 })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updatedAt", { mode: "date", precision: 3 })
+    .notNull()
+    .defaultNow(),
 });
-
-export const fileShares = pgTable("file_shares", {
-  id: uuid("id").primaryKey().defaultRandom(),
-
-  expiresAt: timestamp("expiresAt", { mode: "date", precision: 3 }),
-
-  fileId: uuid("fileId").notNull().references(() => files.id, { onDelete: "cascade" }),
-  memberId: uuid("memberId").notNull().references(() => auth.members.id, { onDelete: "cascade" }),
-
-  createdAt: timestamp("createdAt", { mode: "date", precision: 3 }).notNull().defaultNow(),
-  updatedAt: timestamp("updatedAt", { mode: "date", precision: 3 }).notNull().defaultNow(),
-});
-
-export const formFieldFiles = pgTable("form_field_files", {
-  id: uuid("id").primaryKey().defaultRandom(),
-
-  fileId: uuid("fileId").notNull().references(() => files.id, { onDelete: "cascade" }),
-  formFieldId: uuid("formFieldId").notNull().references(() => formFields.id, { onDelete: "cascade" }),
-
-  createdAt: timestamp("createdAt", { mode: "date", precision: 3 }).notNull().defaultNow(),
-  updatedAt: timestamp("updatedAt", { mode: "date", precision: 3 }).notNull().defaultNow(),
-});
-
-export default {
-  forms,
-  formFields,
-  templateFields,
-  templates,
-  formHistories,
-  reviewFlows,
-  comments,
-  files,
-  fileFolders,
-  fileShares,
-  formFieldFiles,
-};

@@ -28,7 +28,10 @@
     "vue": "latest"
   },
   "dependencies": {
+    "@ardatan/graphql-helix": "^0.1.12",
     "@electric-sql/pglite": "^0.3.2",
+    "@graphql-yoga/handler": "^0.1.0",
+    "@graphql-yoga/render-graphiql": "^5.13.5",
     "@pothos/core": "^4.6.2",
     "@pothos/plugin-drizzle": "^0.10.3",
     "@pothos/plugin-relay": "^4.4.2",
@@ -40,7 +43,9 @@
     "better-auth": "^1.2.8",
     "drizzle-kit": "^1.0.0-beta.1-c0277c0",
     "drizzle-orm": "^1.0.0-beta.1-c0277c0",
+    "graphql-helix": "^1.13.0",
     "graphql-scalars": "^1.24.2",
     "graphql-yoga": "^5.13.5"
-  }
+  },
+  "packageManager": "yarn@4.8.1+sha512.bc946f2a022d7a1a38adfc15b36a66a3807a67629789496c3714dd1703d2e6c6b1c69ff9ec3b43141ac7a1dd853b7685638eb0074300386a59c18df351ef8ff6"
 }

@@ -1,3 +1,4 @@
+
 import {
   boolean,
   integer,
@@ -8,129 +9,200 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
-const userRole = pgEnum("UserRole", [
-  "user",
-  "admin",
-]);
-
-const users = pgTable("users", {
+export const organizations = pgTable("organizations", {
   id: uuid("id").primaryKey().defaultRandom(),
 
+  // Data
+  logo: text("logo"),
+  name: text("name").notNull(),
+  slug: text("slug").notNull(),
+  metadata: text("metadata"),
+
+  // References
+  ownerId: uuid("ownerId").notNull(),
+  lastModifiedBy: uuid("lastModifiedBy").notNull(),
+
+  // Timestamps
+  createdAt: timestamp("createdAt", { mode: "date", precision: 3 })
+    .defaultNow()
+    .notNull(),
+  updatedAt: timestamp("updatedAt", { mode: "date", precision: 3 })
+    .defaultNow()
+    .notNull(),
+});
+
+export const userRoleEnum = pgEnum("userRoleEnum", ["user", "admin"]);
+
+export const users = pgTable("users", {
+  id: uuid("id").primaryKey().defaultRandom(),
+
+  // Data
   name: text("name").notNull(),
   email: text("email").notNull().unique(),
   emailVerified: boolean("emailVerified").default(false).notNull(),
   image: text("image"),
-  role: userRole("role").notNull().default("user"),
+  role: userRoleEnum("role").notNull().default("user"),
   banned: boolean("banned"),
   banExpires: timestamp("banExpires", { mode: "date", precision: 3 }),
   banReason: text("banReason"),
 
-  createdAt: timestamp("createdAt", { mode: "date", precision: 3 }).defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt", { mode: "date", precision: 3 }).defaultNow().notNull(),
+  // References
+  activeOrganizationId: uuid("activeOrganizationId")
+    .references(() => organizations.id)
+    .notNull(),
+  impersonatedBy: uuid("impersonatedBy"),
+  lastModifiedBy: uuid("lastModifiedBy"),
+
+  // Timestamps
+  createdAt: timestamp("createdAt", { mode: "date", precision: 3 })
+    .defaultNow()
+    .notNull(),
+  updatedAt: timestamp("updatedAt", { mode: "date", precision: 3 })
+    .defaultNow()
+    .notNull(),
 });
 
-const sessions = pgTable("sessions", {
+export const sessions = pgTable("sessions", {
   id: uuid("id").primaryKey().defaultRandom(),
 
+  // Data
   expiresAt: timestamp("expiresAt", { mode: "date", precision: 3 }).notNull(),
   ipAddress: text("ipAddress"),
   token: text("token").notNull(),
   userAgent: text("userAgent"),
 
-  activeOrganizationId: uuid("activeOrganizationId").references(() => organizations.id, { onDelete: "cascade" }),
-  impersonatedBy: uuid("impersonatedBy").references(() => users.id, { onDelete: "cascade" }),
-  userId: uuid("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
+  // References
+  impersonatedBy: uuid("impersonatedBy").references(() => users.id),
+  userId: uuid("userId")
+    .references(() => users.id)
+    .notNull(),
+  activeOrganizationId: uuid("activeOrganizationId")
+    .references(() => organizations.id)
+    .notNull(),
 
-  createdAt: timestamp("createdAt", { mode: "date", precision: 3 }).defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt", { mode: "date", precision: 3 }).defaultNow().notNull(),
+  // Timestamps
+  createdAt: timestamp("createdAt", { mode: "date", precision: 3 })
+    .defaultNow()
+    .notNull(),
+  updatedAt: timestamp("updatedAt", { mode: "date", precision: 3 })
+    .defaultNow()
+    .notNull(),
 });
 
-const accounts = pgTable("accounts", {
+export const accounts = pgTable("accounts", {
   id: uuid("id").primaryKey().defaultRandom(),
 
-  accountId: text("accountId").notNull(),
+  // Data
   scope: text("scope"),
   accessToken: text("accessToken"),
   idToken: text("idToken"),
   password: text("password"),
   providerId: text("providerId").notNull(),
   refreshToken: text("refreshToken"),
-  accessTokenExpiresAt: timestamp("accessTokenExpiresAt", { mode: "date", precision: 3 }),
-  refreshTokenExpiresAt: timestamp("refreshTokenExpiresAt", { mode: "date", precision: 3 }),
+  accessTokenExpiresAt: timestamp("accessTokenExpiresAt", {
+    mode: "date",
+    precision: 3,
+  }),
+  refreshTokenExpiresAt: timestamp("refreshTokenExpiresAt", {
+    mode: "date",
+    precision: 3,
+  }),
 
-  userId: uuid("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
+  // References
+  accountId: text("accountId").notNull().unique(),
+  userId: uuid("userId")
+    .references(() => users.id)
+    .notNull(),
 
-  createdAt: timestamp("createdAt", { mode: "date", precision: 3 }).defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt", { mode: "date", precision: 3 }).defaultNow().notNull(),
+  // Timestamps
+  createdAt: timestamp("createdAt", { mode: "date", precision: 3 })
+    .defaultNow()
+    .notNull(),
+  updatedAt: timestamp("updatedAt", { mode: "date", precision: 3 })
+    .defaultNow()
+    .notNull(),
 });
 
-const verifications = pgTable("verifications", {
+export const verifications = pgTable("verifications", {
   id: uuid("id").primaryKey().defaultRandom(),
 
-  identifier: text("identifier").notNull(),
+  identifier: text("identifier").notNull().unique(),
   value: text("value").notNull(),
-  expiresAt: timestamp("expiresAt", { mode: "date", precision: 3 }).defaultNow().notNull(),
+  expiresAt: timestamp("expiresAt", { mode: "date", precision: 3 })
+    .defaultNow()
+    .notNull(),
 
-  createdAt: timestamp("createdAt", { mode: "date", precision: 3 }).defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt", { mode: "date", precision: 3 }).defaultNow().notNull(),
+  // Timestamps
+  createdAt: timestamp("createdAt", { mode: "date", precision: 3 })
+    .defaultNow()
+    .notNull(),
+  updatedAt: timestamp("updatedAt", { mode: "date", precision: 3 })
+    .defaultNow()
+    .notNull(),
 });
 
-const organizations = pgTable("organizations", {
-  id: uuid("id").primaryKey().defaultRandom(),
-
-  logo: text("logo"),
-  name: text("name").notNull(),
-  slug: text("slug").notNull(),
-  metadata: text("metadata"),
-
-  createdAt: timestamp("createdAt", { mode: "date", precision: 3 }).defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt", { mode: "date", precision: 3 }).defaultNow().notNull(),
-});
-
-const memberRole = pgEnum("MemberRole", [
+export const organizationRoleEnum = pgEnum("organizationRoleEnum", [
   "owner",
   "reviewer",
   "executor",
   "member",
 ]);
 
-const members = pgTable("members", {
+export const members = pgTable("members", {
   id: uuid("id").primaryKey().defaultRandom(),
 
-  createdAt: timestamp("createdAt", { mode: "date", precision: 3 }).defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt", { mode: "date", precision: 3 }).defaultNow().notNull(),
-
-  userId: uuid("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
-  lastModifiedBy: uuid("lastModifiedBy").references(() => users.id, { onDelete: "cascade" }),
-  organizationId: uuid("organizationId").notNull().references(() => organizations.id, { onDelete: "cascade" }),
-
-  role: memberRole("role").notNull().default("member"),
+  // Data
+  role: organizationRoleEnum("role").notNull().default("member"),
   version: integer("version").default(1).notNull(),
+
+  // References
+  userId: uuid("userId")
+    .references(() => users.id)
+    .notNull(),
+  lastModifiedBy: uuid("lastModifiedBy")
+    .references(() => users.id)
+    .notNull(),
+  organizationId: uuid("organizationId")
+    .references(() => organizations.id)
+    .notNull(),
+
+  // Timestamps
+  createdAt: timestamp("createdAt", { mode: "date", precision: 3 })
+    .defaultNow()
+    .notNull(),
+  updatedAt: timestamp("updatedAt", { mode: "date", precision: 3 })
+    .defaultNow()
+    .notNull(),
 });
 
-const invitations = pgTable("invitations", {
+export const invitations = pgTable("invitations", {
   id: uuid("id").primaryKey().defaultRandom(),
 
+  // Data
   email: text("email").notNull(),
-  role: memberRole("role").notNull().default("member"),
+  role: organizationRoleEnum("role").notNull().default("member"),
   status: text("status").notNull().default("pending"),
-  expiresAt: timestamp("expiresAt", { mode: "date", precision: 3 }).defaultNow().notNull(),
+  expiresAt: timestamp("expiresAt", { mode: "date", precision: 3 })
+    .defaultNow()
+    .notNull(),
+  token: text("token").notNull(),
 
-  organizationId: uuid("organizationId").notNull().references(() => organizations.id, { onDelete: "cascade" }),
-  inviterId: uuid("inviterId").references(() => users.id, { onDelete: "cascade" }),
+  // References
+  inviterId: uuid("inviterId")
+    .references(() => users.id)
+    .notNull(),
+  organizationId: uuid("organizationId")
+    .references(() => organizations.id)
+    .notNull(),
+  lastModifiedBy: uuid("lastModifiedBy")
+    .references(() => users.id)
+    .notNull(),
 
-  createdAt: timestamp("createdAt", { mode: "date", precision: 3 }).defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt", { mode: "date", precision: 3 }).defaultNow().notNull(),
+  // Timestamps
+  createdAt: timestamp("createdAt", { mode: "date", precision: 3 })
+    .defaultNow()
+    .notNull(),
+  updatedAt: timestamp("updatedAt", { mode: "date", precision: 3 })
+    .defaultNow()
+    .notNull(),
 });
-
-export default {
-  users,
-  userRole,
-  sessions,
-  accounts,
-  verifications,
-  organizations,
-  members,
-  memberRole,
-  invitations,
-};

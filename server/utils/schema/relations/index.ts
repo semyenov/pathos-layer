@@ -1,187 +1,399 @@
 import { defineRelations } from "drizzle-orm";
-import { tables } from "../tables";
+import { appTables, authTables } from "../tables";
 
 export const relations = defineRelations(
-  tables,
-  (r) => ({
+  {
+    ...appTables,
+    ...authTables,
+  },
+  (t) => ({
     users: {
-      accounts: r.many.accounts({
-        from: r.users.id,
-        to: r.accounts.userId,
-        alias: "AccountToUser"
+      accounts: t.many.accounts({
+        from: t.users.id,
+        to: t.accounts.userId,
+        alias: "UserIdToAccountUserId",
       }),
-      sessions: r.many.sessions({
-        from: r.users.id,
-        to: r.sessions.userId,
-        alias: "SessionToUser"
+      sessions: t.many.sessions({
+        from: t.users.id,
+        to: t.sessions.userId,
+        alias: "UserIdToSessionUserId",
       }),
-      members: r.many.members({
-        from: r.users.id,
-        to: r.members.userId,
-        alias: "MemberToUser"
+      members: t.many.members({
+        from: t.users.id,
+        to: t.members.userId,
+        alias: "UserIdToMemberUserId",
+      }),
+      organizations: t.many.organizations({
+        from: t.users.id,
+        to: t.organizations.id,
+        alias: "UserIdToOrganizationId",
+      }),
+      organizationsOwner: t.many.organizations({
+        from: t.users.id,
+        to: t.organizations.ownerId,
+        alias: "UserIdToOrganizationOwnerId",
+      }),
+      lastModifiedMembers: t.many.members({
+        from: t.users.id,
+        to: t.members.lastModifiedBy,
+        alias: "UserIdToMemberLastModifiedByUserId",
+      }),
+      lastModifiedOrganizations: t.many.organizations({
+        from: t.users.id,
+        to: t.organizations.lastModifiedBy,
+        alias: "UserIdToOrganizationLastModifiedByUserId",
+      }),
+      lastModifiedForms: t.many.forms({
+        from: t.users.id,
+        to: t.forms.lastModifiedBy,
+        alias: "UserIdToFormLastModifiedByUserId",
+      }),
+      lastModifiedReviewFlows: t.many.reviewFlows({
+        from: t.users.id,
+        to: t.reviewFlows.lastModifiedBy,
+        alias: "UserIdToReviewFlowLastModifiedByUserId",
+      }),
+      lastModifiedFileFolders: t.many.fileFolders({
+        from: t.users.id,
+        to: t.fileFolders.lastModifiedBy,
+        alias: "UserIdToFileFolderLastModifiedByUserId",
+      }),
+      lastModifiedFiles: t.many.files({
+        from: t.users.id,
+        to: t.files.lastModifiedBy,
+        alias: "UserIdToFileLastModifiedByUserId",
+      }),
+      lastModifiedInvitations: t.many.invitations({
+        from: t.users.id,
+        to: t.invitations.lastModifiedBy,
+        alias: "UserIdToInvitationLastModifiedByUserId",
+      }),
+      lastModifiedFormFields: t.many.formFields({
+        from: t.users.id,
+        to: t.formFields.lastModifiedBy,
+        alias: "UserIdToFormFieldLastModifiedByUserId",
+      }),
+      lastModifiedTemplateFields: t.many.templateFields({
+        from: t.users.id,
+        to: t.templateFields.lastModifiedBy,
+        alias: "UserIdToTemplateFieldLastModifiedByUserId",
+      }),
+      lastModifiedComments: t.many.comments({
+        from: t.users.id,
+        to: t.comments.lastModifiedBy,
+        alias: "UserIdToCommentLastModifiedByUserId",
+      }),
+      lastModifiedBy: t.one.users({
+        from: t.users.lastModifiedBy,
+        to: t.users.id,
+        alias: "UserIdToLastModifiedByUserId",
       }),
     },
     sessions: {
-      user: r.one.users({
-        from: r.sessions.userId,
-        to: r.users.id,
-        alias: "SessionToUser"
+      user: t.one.users({
+        from: t.sessions.userId,
+        to: t.users.id,
+        alias: "SessionUserIdToUserId",
+      }),
+      activeOrganization: t.one.organizations({
+        from: t.sessions.activeOrganizationId,
+        to: t.organizations.id,
+        alias: "SessionActiveOrganizationIdToOrganizationId",
+      }),
+      impersonatedBy: t.one.users({
+        from: t.sessions.impersonatedBy,
+        to: t.users.id,
+        alias: "SessionImpersonatedByUserIdToUserId",
       }),
     },
     accounts: {
-      user: r.one.users({
-        from: r.accounts.userId,
-        to: r.users.id,
-        alias: "AccountToUser"
+      user: t.one.users({
+        from: t.accounts.userId,
+        to: t.users.id,
+        alias: "AccountUserIdToUserId",
       }),
     },
     forms: {
-      fields: r.many.formFields({
-        from: r.forms.id,
-        to: r.formFields.formId,
-        alias: "FormToFormField"
+      fields: t.many.formFields({
+        from: t.forms.id,
+        to: t.formFields.formId,
+        alias: "FormIdToFormFieldFormId",
       }),
-      organization: r.one.organizations({
-        from: r.forms.organizationId,
-        to: r.organizations.id,
-        alias: "FormToOrganization"
+      organization: t.one.organizations({
+        from: t.forms.organizationId,
+        to: t.organizations.id,
+        alias: "FormOrganizationIdToOrganizationId",
       }),
-      template: r.one.templates({
-        from: r.forms.templateId,
-        to: r.templates.id,
-        alias: "FormToTemplate",
+      template: t.one.templates({
+        from: t.forms.templateId,
+        to: t.templates.id,
+        alias: "FormTemplateIdToTemplateId",
       }),
-      history: r.many.formHistories({
-        from: r.forms.id,
-        to: r.formHistories.formId,
-        alias: "FormToHistory"
+      history: t.many.formHistories({
+        from: t.forms.id,
+        to: t.formHistories.formId,
+        alias: "FormIdToFormHistoryFormId",
       }),
-      reviewFlow: r.many.reviewFlows({
-        from: r.forms.id,
-        to: r.reviewFlows.formId,
-        alias: "FormToReviewFlow"
+      reviewFlow: t.many.reviewFlows({
+        from: t.forms.id,
+        to: t.reviewFlows.formId,
+        alias: "FormIdToReviewFlowFormId",
+      }),
+      lastModifiedBy: t.one.users({
+        from: t.forms.lastModifiedBy,
+        to: t.users.id,
+        alias: "FormLastModifiedByUserIdToUserId",
       }),
     },
     formFields: {
-      form: r.one.forms({
-        from: r.formFields.formId,
-        to: r.forms.id,
-        alias: "FormToFormField"
+      form: t.one.forms({
+        from: t.formFields.formId,
+        to: t.forms.id,
+        alias: "FormFieldFormIdToFormId",
       }),
-      comments: r.many.comments({
-        from: r.formFields.id,
-        to: r.comments.formFieldId,
-        alias: "FormFieldToComment",
+      comments: t.many.comments({
+        from: t.formFields.id,
+        to: t.comments.formFieldId,
+        alias: "FormFieldIdToCommentFormFieldId",
       }),
-      templateField: r.one.templateFields({
-        from: r.formFields.templateFieldId,
-        to: r.templateFields.id,
-        alias: "FormFieldToTemplateField",
+      templateField: t.one.templateFields({
+        from: t.formFields.templateFieldId,
+        to: t.templateFields.id,
+        alias: "FormFieldTemplateFieldIdToTemplateFieldId",
+      }),
+      lastModifiedBy: t.one.users({
+        from: t.formFields.lastModifiedBy,
+        to: t.users.id,
+        alias: "FormFieldLastModifiedByUserIdToUserId",
       }),
     },
     templates: {
-      fields: r.many.templateFields({
-        from: r.templates.id,
-        to: r.templateFields.templateId,
-        alias: "TemplateToField"
+      fields: t.many.templateFields({
+        from: t.templates.id,
+        to: t.templateFields.templateId,
+        alias: "TemplateIdToTemplateFieldTemplateId",
       }),
-      forms: r.many.forms({
-        from: r.templates.id,
-        to: r.forms.templateId,
-        alias: "FormToTemplate",
+      forms: t.many.forms({
+        from: t.templates.id,
+        to: t.forms.templateId,
+        alias: "TemplateIdToFormTemplateId",
+      }),
+      lastModifiedBy: t.one.users({
+        from: t.templates.lastModifiedBy,
+        to: t.users.id,
+        alias: "TemplateLastModifiedByUserIdToUserId",
       }),
     },
     templateFields: {
-      template: r.one.templates({
-        from: r.templateFields.templateId,
-        to: r.templates.id,
-        alias: "TemplateToField"
+      template: t.one.templates({
+        from: t.templateFields.templateId,
+        to: t.templates.id,
+        alias: "TemplateFieldTemplateIdToTemplateId",
       }),
-      formFields: r.many.formFields({
-        from: r.templateFields.id,
-        to: r.formFields.templateFieldId,
-        alias: "FormFieldToTemplateField",
+      formFields: t.many.formFields({
+        from: t.templateFields.id,
+        to: t.formFields.templateFieldId,
+        alias: "TemplateFieldIdToFormFieldFormFieldId",
+      }),
+      lastModifiedBy: t.one.users({
+        from: t.templateFields.lastModifiedBy,
+        to: t.users.id,
+        alias: "TemplateFieldLastModifiedByUserIdToUserId",
       }),
     },
     organizations: {
-      members: r.many.members({
-        from: r.organizations.id,
-        to: r.members.organizationId,
-        alias: "OrganizationToMember"
+      owner: t.one.members({
+        from: t.organizations.ownerId,
+        to: t.members.id,
+        alias: "OrganizationOwnerIdToMemberId",
       }),
-      forms: r.many.forms({
-        from: r.organizations.id,
-        to: r.forms.organizationId,
-        alias: "FormToOrganization"
+      members: t.many.members({
+        from: t.organizations.id,
+        to: t.members.organizationId,
+        alias: "OrganizationIdToMemberOrganizationId",
       }),
-      reviewFlows: r.many.reviewFlows({
-        from: r.organizations.id,
-        to: r.reviewFlows.organizationId,
-        alias: "OrganizationToReviewFlow"
+      forms: t.many.forms({
+        from: t.organizations.id,
+        to: t.forms.organizationId,
+        alias: "OrganizationIdToFormOrganizationId",
       }),
-      invitations: r.many.invitations({
-        from: r.organizations.id,
-        to: r.invitations.organizationId,
-        alias: "OrganizationToInvitation"
+      reviewFlows: t.many.reviewFlows({
+        from: t.organizations.id,
+        to: t.reviewFlows.organizationId,
+        alias: "OrganizationIdToReviewFlowOrganizationId",
+      }),
+      invitations: t.many.invitations({
+        from: t.organizations.id,
+        to: t.invitations.organizationId,
+        alias: "OrganizationIdToInvitationOrganizationId",
+      }),
+      fileFolders: t.many.fileFolders({
+        from: t.organizations.id,
+        to: t.fileFolders.organizationId,
+        alias: "OrganizationIdToFileFolderOrganizationId",
+      }),
+      files: t.many.files({
+        from: t.organizations.id,
+        to: t.files.organizationId,
+        alias: "OrganizationIdToFileOrganizationId",
+      }),
+      lastModifiedBy: t.one.users({
+        from: t.organizations.lastModifiedBy,
+        to: t.users.id,
+        alias: "OrganizationLastModifiedByUserIdToUserId",
       }),
     },
     members: {
-      user: r.one.users({
-        from: r.members.userId,
-        to: r.users.id,
-        alias: "MemberToUser"
+      user: t.one.users({
+        from: t.members.userId,
+        to: t.users.id,
+        alias: "MemberUserIdToUserId",
       }),
-      organization: r.one.organizations({
-        from: r.members.organizationId,
-        to: r.organizations.id,
-        alias: "OrganizationToMember"
+      organization: t.one.organizations({
+        from: t.members.organizationId,
+        to: t.organizations.id,
+        alias: "MemberOrganizationIdToOrganizationId",
       }),
-      comments: r.many.comments({
-        from: r.members.id,
-        to: r.comments.memberId,
-        alias: "MemberToComment"
+      comments: t.many.comments({
+        from: t.members.id,
+        to: t.comments.memberId,
+        alias: "MemberIdToCommentMemberId",
+      }),
+      uploadedFiles: t.many.files({
+        from: t.members.id,
+        to: t.files.uploaderMemberId,
+        alias: "MemberIdToFileUploaderMemberId",
+      }),
+      createdFileFolders: t.many.fileFolders({
+        from: t.members.id,
+        to: t.fileFolders.creatorMemberId,
+        alias: "MemberIdToFileFolderCreatorMemberId",
+      }),
+      lastModifiedBy: t.one.users({
+        from: t.members.lastModifiedBy,
+        to: t.users.id,
+        alias: "MemberLastModifiedByUserIdToUserId",
       }),
     },
     reviewFlows: {
-      form: r.one.forms({
-        from: r.reviewFlows.formId,
-        to: r.forms.id,
-        alias: "FormToReviewFlow"
+      form: t.one.forms({
+        from: t.reviewFlows.formId,
+        to: t.forms.id,
+        alias: "ReviewFlowFormIdToFormId",
       }),
-      organization: r.one.organizations({
-        from: r.reviewFlows.organizationId,
-        to: r.organizations.id,
-        alias: "OrganizationToReviewFlow"
+      organization: t.one.organizations({
+        from: t.reviewFlows.organizationId,
+        to: t.organizations.id,
+        alias: "ReviewFlowOrganizationIdToOrganizationId",
       }),
-      comments: r.many.comments({
-        from: r.reviewFlows.id,
-        to: r.comments.reviewFlowId,
-        alias: "ReviewFlowToComment"
+      comments: t.many.comments({
+        from: t.reviewFlows.id,
+        to: t.comments.reviewFlowId,
+        alias: "ReviewFlowIdToCommentReviewFlowId",
+      }),
+      lastModifiedBy: t.one.users({
+        from: t.reviewFlows.lastModifiedBy,
+        to: t.users.id,
+        alias: "ReviewFlowLastModifiedByUserIdToUserId",
       }),
     },
     comments: {
-      member: r.one.members({
-        from: r.comments.memberId,
-        to: r.members.id,
-        alias: "MemberToComment"
+      member: t.one.members({
+        from: t.comments.memberId,
+        to: t.members.id,
+        alias: "CommentMemberIdToMemberId",
       }),
-      reviewFlow: r.one.reviewFlows({
-        from: r.comments.reviewFlowId,
-        to: r.reviewFlows.id,
-        alias: "ReviewFlowToComment"
+      form: t.one.forms({
+        from: t.comments.formId,
+        to: t.forms.id,
+        alias: "CommentFormIdToFormId",
       }),
-      formField: r.one.formFields({
-        from: r.comments.formFieldId,
-        to: r.formFields.id,
-        alias: "FormFieldToComment",
+      formField: t.one.formFields({
+        from: t.comments.formFieldId,
+        to: t.formFields.id,
+        alias: "CommentFormFieldIdToFormFieldId",
+      }),
+      reviewFlow: t.one.reviewFlows({
+        from: t.comments.reviewFlowId,
+        to: t.reviewFlows.id,
+        alias: "CommentReviewFlowIdToReviewFlowId",
+      }),
+      lastModifiedBy: t.one.users({
+        from: t.comments.lastModifiedBy,
+        to: t.users.id,
+        alias: "CommentLastModifiedByUserIdToUserId",
       }),
     },
     invitations: {
-      organization: r.one.organizations({
-        from: r.invitations.organizationId,
-        to: r.organizations.id,
-        alias: "OrganizationToInvitation"
+      organization: t.one.organizations({
+        from: t.invitations.organizationId,
+        to: t.organizations.id,
+        alias: "InvitationOrganizationIdToOrganizationId",
+      }),
+      inviter: t.one.users({
+        from: t.invitations.inviterId,
+        to: t.users.id,
+        alias: "InvitationInviterIdToUserId",
+      }),
+      lastModifiedBy: t.one.users({
+        from: t.invitations.lastModifiedBy,
+        to: t.users.id,
+        alias: "InvitationLastModifiedByUserIdToUserId",
       }),
     },
-  })
+    files: {
+      fileFolder: t.one.fileFolders({
+        from: t.files.fileFolderId,
+        to: t.fileFolders.id,
+        alias: "FileFileFolderIdToFileFolderId",
+      }),
+      organization: t.one.organizations({
+        from: t.files.organizationId,
+        to: t.organizations.id,
+        alias: "FileOrganizationIdToOrganizationId",
+      }),
+      uploaderMember: t.one.members({
+        from: t.files.uploaderMemberId,
+        to: t.members.id,
+        alias: "FileUploaderMemberIdToMemberId",
+      }),
+      lastModifiedByMember: t.one.members({
+        from: t.files.lastModifiedBy,
+        to: t.members.id,
+        alias: "FileLastModifiedByMemberIdToMemberId",
+      }),
+      lastModifiedBy: t.one.users({
+        from: t.files.lastModifiedBy,
+        to: t.users.id,
+        alias: "FileLastModifiedByUserIdToUserId",
+      }),
+    },
+    fileFolders: {
+      files: t.many.files({
+        from: t.fileFolders.id,
+        to: t.files.fileFolderId,
+        alias: "FileFolderIdToFileFileFolderId",
+      }),
+      parent: t.one.fileFolders({
+        from: t.fileFolders.parentId,
+        to: t.fileFolders.id,
+        alias: "FileFolderParentIdToFileFolderId",
+      }),
+      organization: t.one.organizations({
+        from: t.fileFolders.organizationId,
+        to: t.organizations.id,
+        alias: "FileFolderOrganizationIdToOrganizationId",
+      }),
+      creatorMember: t.one.members({
+        from: t.fileFolders.creatorMemberId,
+        to: t.members.id,
+        alias: "FileFolderCreatorMemberIdToMemberId",
+      }),
+      lastModifiedBy: t.one.users({
+        from: t.fileFolders.lastModifiedBy,
+        to: t.users.id,
+        alias: "FileFolderLastModifiedByUserIdToUserId",
+      }),
+    },
+  }),
 );
