@@ -1,0 +1,31 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# GraphQL Architecture
+
+The GraphQL API is built using Pothos, a code-first GraphQL schema builder.
+
+## Key Files
+
+- [server/graphql/builder.ts](mdc:server/graphql/builder.ts) - Configures the GraphQL schema builder with plugins and settings
+- [server/graphql/schema.ts](mdc:server/graphql/schema.ts) - Assembles the GraphQL schema from all type definitions
+- [server/graphql/index.ts](mdc:server/graphql/index.ts) - Exports the builder and schema
+- [server/api/graphql.ts](mdc:server/api/graphql.ts) - GraphQL API endpoint using Yoga
+
+## Type Definitions
+
+Types are organized by domain in the `server/graphql/types` directory:
+
+- [server/graphql/types/auth.ts](mdc:server/graphql/types/auth.ts) - Authentication types and operations
+- [server/graphql/types/organization.ts](mdc:server/graphql/types/organization.ts) - Organization management
+- [server/graphql/types/template.ts](mdc:server/graphql/types/template.ts) - Form templates
+- [server/graphql/types/comment.ts](mdc:server/graphql/types/comment.ts) - Comments
+- [server/graphql/types/reviewFlow.ts](mdc:server/graphql/types/reviewFlow.ts) - Review flows
+- [server/graphql/types/session.ts](mdc:server/graphql/types/session.ts) - Session management
+- [server/graphql/types/member.ts](mdc:server/graphql/types/member.ts) - Organization members
+
+## Authentication
+
+Authentication is handled through context in the GraphQL API, with auth scopes defined in the schema builder.

@@ -1,0 +1,33 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Organization Management
+
+The project includes a multi-organization system where users can belong to multiple organizations with different roles.
+
+## Key Concepts
+
+- **Organizations**: Top-level entities that group users and resources
+- **Members**: Users within organizations with specific roles
+- **Roles**: Different permission levels within organizations
+
+## Member Roles
+
+- `owner` - Full control over the organization
+- `reviewer` - Can review forms and approve changes
+- `executor` - Can create and edit forms
+- `member` - Basic access to view forms
+
+## GraphQL Operations
+
+Organization operations are defined in:
+
+- [server/graphql/types/organization.ts](mdc:server/graphql/types/organization.ts) - Organization operations
+- [server/graphql/types/member.ts](mdc:server/graphql/types/member.ts) - Member operations
+- [server/graphql/types/session.ts](mdc:server/graphql/types/session.ts) - Active organization selection
+
+## Multi-organization Context
+
+Users can belong to multiple organizations but have one active organization at a time, which is stored in their session.

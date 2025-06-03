@@ -7,9 +7,9 @@ alwaysApply: false
 
 The project uses Drizzle ORM with PostgreSQL. The schema is defined in:
 
-- [src/lib/schema/app.ts](mdc:src/lib/schema/app.ts) - Application tables (forms, form fields, etc.)
-- [src/lib/schema/auth.ts](mdc:src/lib/schema/auth.ts) - Authentication tables (users, sessions, etc.)
-- [src/lib/schema/relations.ts](mdc:src/lib/schema/relations.ts) - Table relationships
+- [server/drizzle/schema/tables/app.ts](mdc:server/drizzle/schema/tables/app.ts) - Application tables (forms, form fields, etc.)
+- [server/drizzle/schema/tables/auth.ts](mdc:server/drizzle/schema/tables/auth.ts) - Authentication tables (users, sessions, etc.)
+- [server/drizzle/schema/relations/index.ts](mdc:server/drizzle/schema/relations/index.ts) - Table relationships
 
 ## Key Tables
 
@@ -18,6 +18,8 @@ The project uses Drizzle ORM with PostgreSQL. The schema is defined in:
 - `sessions` - User sessions
 - `accounts` - Authentication accounts
 - `organizations` - Organizations for users
+- `members` - Organization members
+- `invitations` - Organization invitations
 
 ### App
 - `forms` - Form definitions
@@ -27,6 +29,12 @@ The project uses Drizzle ORM with PostgreSQL. The schema is defined in:
 - `formHistories` - History of form changes
 - `reviewFlows` - Form review workflows
 - `comments` - Comments on forms
+- `files` - Uploaded files
+- `fileFolders` - File organization
+
+## Migrations
+
+Migrations are managed by Drizzle Kit and stored in [server/drizzle/migrations](mdc:server/drizzle/migrations).
 
 ## Database Relationships
-Tables relationships are defined using Drizzle's `defineRelations` in [relations.ts](mdc:src/lib/schema/relations.ts).
+Tables relationships are defined using Drizzle's `defineRelations` in [server/drizzle/schema/relations/index.ts](mdc:server/drizzle/schema/relations/index.ts).

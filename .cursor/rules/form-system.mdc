@@ -1,0 +1,38 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Form System
+
+The project includes a comprehensive form management system with templates, fields, and review workflows.
+
+## Key Concepts
+
+- **Templates**: Form templates that define the structure of forms
+- **Forms**: Instances created from templates that can be filled and submitted
+- **Fields**: Form fields with various types (text, number, date, select, etc.)
+- **Review Flows**: Workflows for reviewing and approving forms
+
+## Database Structure
+
+- Templates → Template Fields
+- Forms → Form Fields
+- Review Flows → Comments
+
+## GraphQL Operations
+
+Form operations are defined in:
+
+- [server/graphql/types/template.ts](mdc:server/graphql/types/template.ts) - Template and form operations
+- [server/graphql/types/reviewFlow.ts](mdc:server/graphql/types/reviewFlow.ts) - Review flow operations
+- [server/graphql/types/comment.ts](mdc:server/graphql/types/comment.ts) - Comment operations
+
+## Form Statuses
+
+Forms progress through several statuses:
+- `draft` - Initial creation
+- `underReview` - Submitted for review
+- `needsChanges` - Requires modifications
+- `approved` - Fully approved
+- `rejected` - Rejected

@@ -1,0 +1,23 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Project Structure
+
+This is a Nuxt.js layer project with a GraphQL API and PostgreSQL database (via Drizzle ORM).
+
+## Key Directories
+
+- `/components`: Vue components
+- `/server`: Backend code
+  - `/server/api`: API endpoints
+  - `/server/graphql`: GraphQL schema, types and resolvers
+  - `/server/drizzle`: Database schema and migrations
+  - `/server/utils`: Utility functions and helpers
+
+## Configuration Files
+
+- [app.config.ts](mdc:app.config.ts) - Nuxt app configuration
+- [nuxt.config.ts](mdc:nuxt.config.ts) - Nuxt configuration
+- [drizzle.config.ts](mdc:drizzle.config.ts) - Drizzle ORM configuration

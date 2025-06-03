@@ -1,0 +1,33 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Authentication Flow
+
+The project uses a custom authentication system built with `better-auth` and integrates with GraphQL.
+
+## Key Files
+
+- [server/utils/auth.ts](mdc:server/utils/auth.ts) - Auth configuration and setup
+- [server/graphql/types/auth.ts](mdc:server/graphql/types/auth.ts) - GraphQL auth types and operations
+- [server/api/graphql.ts](mdc:server/api/graphql.ts) - Context setup for authentication
+
+## Authentication Operations
+
+- **Login**: Uses the `login` mutation with email/password
+- **Register**: Uses the `register` mutation to create a new user
+- **Logout**: Uses the `logout` mutation to clear the session
+
+## Session Management
+
+Sessions are stored in the database and tracked via cookies. The active organization is stored in the session.
+
+## Authorization Scopes
+
+The GraphQL API uses scopes for authorization:
+
+- `loggedIn`: User is authenticated
+- `admin`: User has admin privileges
+- `organization`: User has an active organization
+- `organizationOwner`: User is the owner of the active organization
