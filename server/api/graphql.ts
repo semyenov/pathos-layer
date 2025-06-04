@@ -1,25 +1,36 @@
-import type { ServerAdapterInitialContext, WaitUntilFn } from "@whatwg-node/server";
-import { createYoga, renderGraphiQL, type YogaContext } from "graphql-yoga";
-import { defineEventHandler, sendWebResponse, toWebRequest } from "h3";
-import { shouldRenderGraphiQL } from "@ardatan/graphql-helix";
-import type { Context } from "../graphql";
+import type { CookieOptions } from "better-auth";
+import { createYoga, renderGraphiQL, createPubSub, type YogaContext, shouldRenderGraphiQL } from "graphql-yoga";
+import { defineEventHandler, sendWebResponse, toWebRequest, getCookie, setCookie, type H3EventContext } from "h3";
 import { useSchema } from "../graphql";
-import { useDb } from "../utils/db";
-import { useAuth } from "../utils/auth";
-import { createFetch } from "@whatwg-node/fetch";
+
+export interface SessionContext {
+  user: User | null;
+  session: Session | null;
+  member: Member | null;
+  organization: Organization | null;
+}
+
+interface Cookies {
+  get: (name: string) => string | null;
+  set: (name: string, value: string, options: CookieOptions) => void;
+  delete: (name: string) => void;
+}
 
 declare module "h3" {
-  interface H3EventContext extends Context, Partial<ServerAdapterInitialContext> {
-    waitUntil: WaitUntilFn;
+  interface H3EventContext {
+    db: DB;
+    auth: Auth;
+    cookies: Cookies;
   }
 }
 
 declare module "graphql-yoga" {
-  interface YogaContext extends Context, ServerAdapterInitialContext { }
+  interface YogaContext extends H3EventContext, SessionContext { }
 }
 
+const graphql = createYoga<H3EventContext, YogaContext>({
+  id: "graphql",
 
-const yoga = createYoga<Context, YogaContext>({
   schema: useSchema(),
 
   cors: {
@@ -28,83 +39,98 @@ const yoga = createYoga<Context, YogaContext>({
   },
 
   batching: {
-    limit: 10,
+    limit: 100,
   },
 
-  fetchAPI: createFetch({
-    useNodeFetch: true,
-    skipPonyfill: false,
-    formDataLimits: {
-      fields: 1000,
-      files: 10,
-      parts: 1000,
-      fieldNameSize: 100,
-      fileSize: 10 * 1024 * 1024,
-      fieldSize: 1000,
-      headerSize: 1000,
-    },
-  }),
+  plugins: [
+    createPubSub(),
+  ],
 
-  context: (ctx) => ctx,
+  context: async (context) => {
+    const yogaContext = await getYogaContext(context);
+    console.log("yogaContext", yogaContext);
+    return {
+      ...context,
+      ...yogaContext,
+    };
+  },
 });
-
 
 export default defineEventHandler(async (event) => {
   if (shouldRenderGraphiQL(toWebRequest(event))) {
-    return sendWebResponse(event,
-      new Response(renderGraphiQL({
-        endpoint: "/api/graphql",
-        shouldPersistHeaders: true,
-        credentials: "include",
-      }), {
-        status: 200,
-        statusText: "OK",
-        headers: { "Content-Type": "text/html" },
-      }),
-    );
+    return sendWebResponse(event, new Response(renderGraphiQL({
+      endpoint: "/api/graphql",
+      shouldPersistHeaders: true,
+      credentials: "include",
+    }), {
+      status: 200,
+      statusText: "OK",
+      headers: { "Content-Type": "text/html" },
+    }));
   }
 
-  event.context = {
-    event,
-    waitUntil: event.context.waitUntil,
-
-    db: useDb(),
-    auth: useAuth(),
-
-    user: null,
-    member: null,
-    session: null,
-    organization: null,
+  event.context.db = useDb();
+  event.context.auth = useAuth();
+  event.context.cookies = {
+    delete: (name: string) => deleteCookie(event, name),
+    get: (name: string) => getCookie(event, name) ?? null,
+    set: (name: string, value: string, options: CookieOptions) => setCookie(event, name, value, {
+      ...options,
+      sameSite: options.sameSite === "Strict"
+        ? "strict"
+        : options.sameSite === "Lax"
+          ? "lax"
+          : options.sameSite === "None"
+            ? "none"
+            : undefined,
+    }),
   };
 
-  const sessionData = await event.context.auth.api.getSession(
-    toWebRequest(event),
-  );
+  return sendWebResponse(event, await graphql.handleRequest(
+    toWebRequest(event), event.context
+  ));
+});
+
+
+async function getYogaContext(context: H3EventContext): Promise<YogaContext> {
+  let session: Session | null = null;
+  let user: User | null = null;
+  let member: Member | null = null;
+  let organization: Organization | null = null;
+
+  const sessionData = await context.auth.api.getSession({
+    headers: context.request.headers,
+    query: { disableCookieCache: true, disableRefresh: false },
+  });
 
   if (sessionData) {
-    event.context.session = sessionData.session;
-    event.context.user = sessionData.user;
+    session = sessionData.session;
+    user = sessionData.user;
 
-    if (sessionData.session.activeOrganizationId) {
-      event.context.organization =
-        (await event.context.db.query.organizations.findFirst({
-          where: { id: sessionData.session.activeOrganizationId },
-        })) ?? null;
-
-      event.context.member =
-        (await event.context.db.query.members.findFirst({
+    if (user && session?.activeOrganizationId) {
+      member =
+        (await context.db.query.members.findFirst({
           where: {
-            userId: event.context.user.id,
-            organizationId: sessionData.session.activeOrganizationId,
+            userId: user.id,
+            organizationId: session.activeOrganizationId,
           },
         })) ?? null;
+
+      if (member) {
+        organization =
+          (await context.db.query.organizations.findFirst({
+            where: { id: session.activeOrganizationId },
+          })) ?? null;
+      }
     }
   }
 
-  return sendWebResponse(event,
-    await yoga.handleRequest(
-      toWebRequest(event),
-      event.context,
-    ),
-  );
-});
+  return {
+    ...context,
+
+    session,
+    user,
+    member,
+    organization,
+  };
+}

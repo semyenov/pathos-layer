@@ -1,29 +1,4 @@
 import type { GeoJSON } from 'geojson';
-import type { H3Event } from 'h3';
-import type {
-  Auth,
-  Session,
-  User,
-  Member,
-  Organization,
-} from '../utils/auth';
-
-
-export interface Context {
-  event: H3Event;
-
-  // Database
-  db: DB;
-  auth: Auth;
-
-  // Auth
-  user: User | null;
-  session: Session | null;
-
-  // Organization
-  member: Member | null;
-  organization: Organization | null;
-}
 
 export type Scalars = {
   ID: {
@@ -45,8 +20,10 @@ export type Scalars = {
 };
 
 export interface AuthScopes {
-  loggedIn: boolean;
   admin: boolean;
+  logged: boolean;
   organization: boolean;
+  organizationOwner: boolean;
+  organizationMember: boolean;
 }
 

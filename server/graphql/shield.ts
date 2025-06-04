@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-namespace */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import SchemaBuilder, {
   BasePlugin,
@@ -7,29 +8,24 @@ import SchemaBuilder, {
   type TypeParam,
 } from '@pothos/core';
 import { type GraphQLSchema, isObjectType } from 'graphql';
+
 import { applyMiddleware } from 'graphql-middleware';
-
 import { type IRules, shield, type IRule } from 'graphql-shield';
+import type { YogaContext } from 'graphql-yoga';
 
-// Define ShieldRule type
 type ShieldRule = IRule;
 
-// Using namespace here is necessary for the plugin type augmentation
 declare global {
-  // eslint-disable-next-line @typescript-eslint/no-namespace
   export namespace PothosSchemaTypes {
-    // We need to match the original interface parameters
     export interface Plugins<Types extends SchemaTypes> {
       shield?: ShieldPlugin<Types>;
     }
 
-    // We need to match the original interface parameters
     export interface ObjectTypeOptions<Types extends SchemaTypes = SchemaTypes, Shape = unknown>
       extends BaseTypeOptions<Types> {
       shield?: ShieldRule;
     }
 
-    // We need to match the original interface parameters
     export interface FieldOptions<
       Types extends SchemaTypes = SchemaTypes,
       ParentShape = unknown,
@@ -42,7 +38,6 @@ declare global {
       shield?: ShieldRule;
     }
 
-    // We need to match the original interface parameters
     export interface QueryFieldOptions<
       Types extends SchemaTypes,
       Type extends TypeParam<Types>,
@@ -61,7 +56,6 @@ declare global {
       shield?: ShieldRule;
     }
 
-    // We need to match the original interface parameters
     export interface MutationFieldOptions<
       Types extends SchemaTypes,
       Type extends TypeParam<Types>,
@@ -83,7 +77,6 @@ declare global {
 }
 
 const pluginName = 'shield' as const;
-
 export default pluginName;
 
 export class ShieldPlugin<Types extends SchemaTypes> extends BasePlugin<Types> {
@@ -98,9 +91,7 @@ export class ShieldPlugin<Types extends SchemaTypes> extends BasePlugin<Types> {
       }
 
       const rule = ((type.extensions?.pothosOptions ?? {}) as { shield?: ShieldRule }).shield;
-      const ruleMap: Record<string, ShieldRule> = rule
-        ? { '*': rule, }
-        : {};
+      const ruleMap: Record<string, ShieldRule> = rule ? { '*': rule, } : {};
 
       rules[typeName] = ruleMap;
       const fields = type.getFields();
@@ -117,7 +108,20 @@ export class ShieldPlugin<Types extends SchemaTypes> extends BasePlugin<Types> {
       }
     }
 
-    return applyMiddleware(schema, shield(rules));
+    return applyMiddleware(
+      schema,
+      shield<IRules, YogaContext>(rules, {
+        debug: true,
+        fallbackError: 'Unauthorized shield error',
+        allowExternalErrors: true,
+        fallbackRule: {
+          name: 'unauthorized',
+          equals: () => true,
+          extractFragment: () => undefined,
+          resolve: () => Promise.resolve(true),
+        },
+      }),
+    );
   }
 }
 

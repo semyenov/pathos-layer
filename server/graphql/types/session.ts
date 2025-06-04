@@ -24,7 +24,7 @@ export function addSessionTypes(builder: Builder) {
     t.field({
       type: SessionType,
       description: 'Get the current user\'s session.',
-      resolve: async (_, __, { db, session }) => {
+      resolve: async (_, __, { db, sessionCache: session }) => {
         if (!session?.userId) {
           throw new Error('User not authenticated');
         }
@@ -52,9 +52,9 @@ export function addSessionTypes(builder: Builder) {
         organizationId: t.arg.id({ required: true }),
       },
       authScopes: {
-        loggedIn: true,
+        logged: true,
       },
-      resolve: async (_, args, { db, session }) => {
+      resolve: async (_, args, { db, sessionCache: session }) => {
         if (!session?.userId) {
           throw new Error('User not authenticated');
         }

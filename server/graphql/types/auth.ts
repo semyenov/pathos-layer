@@ -60,7 +60,7 @@ export function addAuthTypes(builder: Builder) {
     t.field({
       type: UserType,
       authScopes: {
-        loggedIn: true,
+        logged: true,
       },
       resolve: async (_, __, context) => {
         const foundUser = await context.db.query.users.findFirst({
@@ -120,22 +120,21 @@ export function addAuthTypes(builder: Builder) {
         input: t.arg({ type: LoginInputType, required: true }),
       },
       resolve: async (_, { input }, context) => {
-        const { token } = await context.auth.api.signInEmail({
-          headers: context.event.headers,
+        const { token, user } = await context.auth.api.signInEmail({
           body: input,
+          headers: context.request.headers,
         });
 
         if (!token) {
           throw new Error("Failed to login");
         }
 
-        await context.event.context.auth.api.getSession({
-          headers: context.event.headers,
-          query: {
-            disableCookieCache: true,
-            disableRefresh: true,
-          },
-        });
+        if (user) {
+          const authContext = await context.auth.$context;
+          const { sessionToken: { name: sessionTokenName } } = authContext.authCookies;
+          const { attributes, name: cookieName } = authContext.createAuthCookie(sessionTokenName);
+          context.cookies.set(cookieName, token, attributes);
+        }
 
         return token;
       },
@@ -151,7 +150,7 @@ export function addAuthTypes(builder: Builder) {
       },
       resolve: async (_, { input }, context) => {
         const { token } = await context.auth.api.signUpEmail({
-          headers: context.event.headers,
+          headers: context.request.headers,
           body: input,
         });
 
@@ -161,15 +160,7 @@ export function addAuthTypes(builder: Builder) {
 
         const { authCookies: { sessionToken: { name, options: cookieOptions } } } =
           await context.auth.$context;
-        setCookie(context.event, name, token, {
-          ...cookieOptions,
-          secure: process.env.NODE_ENV === "production",
-          sameSite: "lax" as const,
-          domain:
-            process.env.NODE_ENV === "production"
-              ? "formflow.ai"
-              : "localhost",
-        });
+        context.cookies.set(name, token, cookieOptions);
 
         return token;
       },
@@ -180,18 +171,18 @@ export function addAuthTypes(builder: Builder) {
   const logoutMutation = builder.mutationField("logout", (t) =>
     t.boolean({
       authScopes: {
-        loggedIn: true,
+        logged: true,
       },
       resolve: async (_, __, context) => {
         const session = await context.auth.api.signOut({
-          headers: context.event.headers,
+          headers: context.request.headers,
         });
 
         if (session.success) {
           const { authCookies: { sessionToken: { name: cookieName } } } =
             await context.auth.$context;
 
-          deleteCookie(context.event, cookieName);
+          context.cookies.delete(cookieName);
           return true;
         }
 
@@ -258,22 +249,16 @@ export function addAuthTypes(builder: Builder) {
         }),
       },
       authScopes: {
-        loggedIn: true,
+        logged: true,
       },
       resolve: async (_, { input }, context) => {
         if (!context.user) {
           throw new Error("Not authenticated");
         }
 
-        if (context.user.id !== context.session?.userId) {
-          throw new Error("Not authorized");
-        }
-
         const foundUser = await context.db.query.users.findFirst({
           where: { id: context.user.id },
-          with: {
-            accounts: true,
-          },
+          with: { accounts: true, },
         });
 
         if (!foundUser) {

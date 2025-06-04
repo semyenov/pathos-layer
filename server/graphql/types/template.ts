@@ -218,15 +218,15 @@ export function addTemplateTypes(builder: Builder) {
     t.field({
       type: [FormType],
       authScopes: {
-        loggedIn: true,
+        logged: true,
       },
       resolve: async (_, __, context) => {
-        if (!context.session?.activeOrganizationId || context.session.activeOrganizationId === 'default') {
+        if (!context.sessionCache?.activeOrganizationId || context.sessionCache.activeOrganizationId === 'default') {
           throw new Error('No active organization');
         }
 
         return context.db.query.forms.findMany({
-          where: { organizationId: context.session.activeOrganizationId },
+          where: { organizationId: context.sessionCache.activeOrganizationId },
           with: { fields: true, template: true, organization: true, history: true, reviewFlow: true },
         });
       },
@@ -241,7 +241,7 @@ export function addTemplateTypes(builder: Builder) {
         id: t.arg.id({ required: true }),
       },
       authScopes: {
-        loggedIn: true,
+        logged: true,
       },
       resolve: async (_, args, context) => {
         const form = await context.db.query.forms.findFirst({
@@ -266,10 +266,10 @@ export function addTemplateTypes(builder: Builder) {
         input: t.arg({ type: CreateFormInputType, required: true }),
       },
       authScopes: {
-        loggedIn: true,
+        logged: true,
       },
       resolve: async (_, args, context) => {
-        if (!context.session?.userId || !context.session?.activeOrganizationId) {
+        if (!context.sessionCache?.userId || !context.sessionCache?.activeOrganizationId) {
           throw new Error('Not authenticated or no active organization');
         }
 
@@ -298,7 +298,7 @@ export function addTemplateTypes(builder: Builder) {
           title: args.input.title,
           description: args.input.description || null,
           creatorMemberId: context.member.id,
-          organizationId: context.session.activeOrganizationId || 'default',
+          organizationId: context.sessionCache.activeOrganizationId || 'default',
           status: 'draft' as const,
           updatedAt: new Date(),
           templateId: args.input.templateId,
@@ -354,10 +354,10 @@ export function addTemplateTypes(builder: Builder) {
         input: t.arg({ type: CreateFormFromTemplateInputType, required: true }),
       },
       authScopes: {
-        loggedIn: true,
+        logged: true,
       },
       resolve: async (_, args, context) => {
-        if (!context.session?.userId || !context.session?.activeOrganizationId) {
+        if (!context.sessionCache?.userId || !context.sessionCache?.activeOrganizationId) {
           throw new Error('Not authenticated or no active organization');
         }
 
@@ -383,7 +383,7 @@ export function addTemplateTypes(builder: Builder) {
           title: args.input.title,
           description: args.input.description || template.description || null,
           creatorMemberId: context.member.id,
-          organizationId: context.session.activeOrganizationId || 'default',
+          organizationId: context.sessionCache.activeOrganizationId || 'default',
           templateId: args.input.templateId,
           status: 'draft' as const,
           updatedAt: new Date(),
@@ -443,10 +443,10 @@ export function addTemplateTypes(builder: Builder) {
         input: t.arg({ type: UpdateFormInputType, required: true }),
       },
       authScopes: {
-        loggedIn: true,
+        logged: true,
       },
       resolve: async (_, args, context) => {
-        if (!context.session?.userId || !context.session?.activeOrganizationId) {
+        if (!context.sessionCache?.userId || !context.sessionCache?.activeOrganizationId) {
           throw new Error('Not authenticated or no active organization');
         }
 
@@ -487,10 +487,10 @@ export function addTemplateTypes(builder: Builder) {
         id: t.arg.id({ required: true }),
       },
       authScopes: {
-        loggedIn: true,
+        logged: true,
       },
       resolve: async (_, args, context) => {
-        if (!context.session?.userId || !context.session?.activeOrganizationId) {
+        if (!context.sessionCache?.userId || !context.sessionCache?.activeOrganizationId) {
           throw new Error('Not authenticated or no active organization');
         }
 
@@ -515,7 +515,7 @@ export function addTemplateTypes(builder: Builder) {
     t.field({
       type: [TemplateType],
       authScopes: {
-        loggedIn: true,
+        logged: true,
       },
       resolve: async (_, __, context) => {
         return context.db.query.templates.findMany({
@@ -534,7 +534,7 @@ export function addTemplateTypes(builder: Builder) {
         id: t.arg.id({ required: true }),
       },
       authScopes: {
-        loggedIn: true,
+        logged: true,
       },
       resolve: async (_, args, context) => {
         const template = await context.db.query.templates.findFirst({
@@ -559,10 +559,10 @@ export function addTemplateTypes(builder: Builder) {
         input: t.arg({ type: CreateTemplateInput, required: true }),
       },
       authScopes: {
-        loggedIn: true,
+        logged: true,
       },
       resolve: async (_, args, context) => {
-        if (!context.session) {
+        if (!context.sessionCache) {
           throw new Error('Not authenticated');
         }
 
@@ -575,7 +575,7 @@ export function addTemplateTypes(builder: Builder) {
           description: args.input.description || null,
           lastModifiedBy: context.user?.id ?? 'default' as string,
           creatorMemberId: context.member?.id ?? 'default' as string,
-          organizationId: context.session?.activeOrganizationId || 'default',
+          organizationId: context.sessionCache?.activeOrganizationId || 'default',
           version: 1,
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -626,10 +626,10 @@ export function addTemplateTypes(builder: Builder) {
         input: t.arg({ type: UpdateTemplateInput, required: true }),
       },
       authScopes: {
-        loggedIn: true,
+        logged: true,
       },
       resolve: async (_, args, context) => {
-        if (!context.session) {
+        if (!context.sessionCache) {
           throw new Error('Not authenticated');
         }
 
@@ -706,16 +706,16 @@ export function addTemplateTypes(builder: Builder) {
         id: t.arg.id({ required: true }),
       },
       authScopes: {
-        loggedIn: true,
+        logged: true,
       },
       resolve: async (_, args, context) => {
-        if (!context.session) {
+        if (!context.sessionCache) {
           throw new Error('Not authenticated');
         }
 
         // Check if template exists
         const template = await context.db.query.templates.findFirst({
-          where: { id: args.id, organizationId: context.session.activeOrganizationId || 'default' },
+          where: { id: args.id, organizationId: context.sessionCache.activeOrganizationId || 'default' },
           with: { fields: true, forms: true },
         });
 

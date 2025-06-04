@@ -55,7 +55,7 @@ export function addOrganizationTypes(builder: Builder) {
       t.field({
         type: [OrganizationType],
         authScopes: {
-          loggedIn: true,
+          logged: true,
         },
         resolve: async (_, __, { user, db }) => {
           if (!user) {
@@ -96,7 +96,7 @@ export function addOrganizationTypes(builder: Builder) {
         id: t.arg.id({ required: true }),
       },
       authScopes: {
-        loggedIn: true,
+        logged: true,
       },
       resolve: async (_, args, { user, db }) => {
         if (!user) {
@@ -143,32 +143,26 @@ export function addOrganizationTypes(builder: Builder) {
           input: t.arg({ type: CreateOrganizationInputType, required: true }),
         },
         authScopes: {
-          loggedIn: true,
+          logged: true,
         },
-        resolve: async (_, { input }, { user, member, db }) => {
-          if (!user) {
-            throw new Error("Not authenticated");
-          }
-          if (!member) {
-            throw new Error("Not authorized to create an organization");
-          }
-
-          // Create the organization
-          const organizationId = crypto.randomUUID();
-          await db.insert(tables.organizations).values({
-            id: organizationId,
-            ownerId: member.id,
-            name: input.name,
-            slug: input.slug || "default-slug",
-            logo: input.logo || "default-logo",
-            createdAt: new Date(),
-            lastModifiedBy: user.id,
-            metadata: JSON.stringify({}),
+        resolve: async (_, { input }, { auth, user, db }) => {
+          const organization = await auth.api.createOrganization({
+            body: {
+              name: input.name,
+              slug: input.slug || input.name.toLowerCase().replace(/ /g, "-"),
+              logo: input.logo || "https://ui-avatars.com/api/?name=" + input.name,
+              metadata: {},
+              userId: user?.id,
+              keepCurrentActiveOrganization: true,
+            },
           });
 
-          // Return the created organization
-          const newOrganization = await db.query.organizations.findFirst({
-            where: { id: organizationId },
+          if (!organization) {
+            throw new Error("Failed to create organization");
+          }
+
+          const foundOrganization = await db.query.organizations.findFirst({
+            where: { id: organization.id },
             with: {
               members: { with: { user: true } },
               forms: true,
@@ -177,24 +171,11 @@ export function addOrganizationTypes(builder: Builder) {
             },
           });
 
-          if (!newOrganization) {
+          if (!foundOrganization) {
             throw new Error("Failed to create organization");
           }
 
-          // Add the current user as an owner
-          const memberId = crypto.randomUUID();
-
-          await db.insert(tables.members).values({
-            id: memberId,
-            userId: user.id,
-            organizationId: organizationId,
-            role: "owner",
-            createdAt: new Date(),
-            lastModifiedBy: user.id,
-            version: 1,
-          });
-
-          return newOrganization;
+          return foundOrganization;
         },
       }),
   );
@@ -210,7 +191,7 @@ export function addOrganizationTypes(builder: Builder) {
           input: t.arg({ type: UpdateOrganizationInputType, required: true }),
         },
         authScopes: {
-          loggedIn: true,
+          logged: true,
         },
         resolve: async (_, args, context) => {
           if (!context.member) {
@@ -272,7 +253,7 @@ export function addOrganizationTypes(builder: Builder) {
           input: t.arg({ type: InviteMemberInputType, required: true }),
         },
         authScopes: {
-          loggedIn: true,
+          logged: true,
         },
         resolve: async (_, { input }, context) => {
           if (!context.member) {

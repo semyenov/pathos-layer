@@ -1,26 +1,14 @@
-import type { Context, AuthScopes, Scalars } from "./types";
+import type { AuthScopes, Scalars } from "./types";
 
 import { DateResolver, JSONResolver, ObjectIDResolver, GeoJSONResolver } from "graphql-scalars";
 import DrizzlePlugin from "@pothos/plugin-drizzle";
 import RelayPlugin from "@pothos/plugin-relay";
 import ScopeAuthPlugin from "@pothos/plugin-scope-auth";
-import TracingPlugin from "@pothos/plugin-tracing";
-import ValidationPlugin from "@pothos/plugin-validation";
 import WithInputPlugin from "@pothos/plugin-with-input";
 import { getTableConfig } from "drizzle-orm/pg-core";
 import SchemaBuilder from "@pothos/core";
 import ShieldPlugin from "./shield";
-import { rule } from "graphql-shield";
-import type { GraphQLResolveInfo } from "graphql";
-
-// Export the rules so they can be used in resolvers
-export const isAuthenticated = rule({ cache: 'contextual' })(
-  (_parent: unknown, _args: unknown, ctx: Context, _info: GraphQLResolveInfo) => !!ctx.user,
-);
-
-export const isAdmin = rule({ cache: 'contextual' })(
-  (_parent: unknown, _args: unknown, ctx: Context, _info: GraphQLResolveInfo) => ctx.user?.id === '1',
-);
+import type { YogaContext } from "graphql-yoga";
 
 const builder = new SchemaBuilder<{
   Defaults: "v4";
@@ -28,42 +16,36 @@ const builder = new SchemaBuilder<{
   Tracing: boolean | { formatMessage: (duration: number) => string };
   DrizzleRelations: DrizzleRelations;
   DrizzleTables: DrizzleTables;
-  Context: Context;
+  Context: YogaContext;
   Scalars: Scalars;
   AuthScopes: AuthScopes;
 }>({
   defaults: "v4",
   defaultFieldNullability: false,
 
-  validationOptions: {
-    validationError: (error) => {
-      console.log("validation error", error);
-      return error;
-    },
-  },
 
-  tracing: {
-    default() {
-      return true;
-    },
-    wrap(config) {
-      return async (...params: Parameters<typeof config>) => {
-        const [source, args, context, info] = params;
-        const start = performance.now();
-        const result = await config(source, args, context, info);
-        const end = performance.now();
-        const duration = end - start;
+  // tracing: {
+  //   default() {
+  //     return true;
+  //   },
+  //   wrap(config) {
+  //     return async (...params: Parameters<typeof config>) => {
+  //       const [source, args, context, info] = params;
+  //       const start = performance.now();
+  //       const result = await config(source, args, context, info);
+  //       const end = performance.now();
+  //       const duration = end - start;
 
-        console.log({
-          fieldName: info.fieldName,
-          args: JSON.stringify(args),
-          duration,
-        });
+  //       console.log({
+  //         fieldName: info.fieldName,
+  //         args: JSON.stringify(args),
+  //         duration,
+  //       });
 
-        return result;
-      };
-    },
-  },
+  //       return result;
+  //     };
+  //   },
+  // },
 
   drizzle: {
     client: useDb(),
@@ -75,59 +57,29 @@ const builder = new SchemaBuilder<{
   },
 
   plugins: [
-    TracingPlugin,
     DrizzlePlugin,
-    ValidationPlugin,
     ScopeAuthPlugin,
     WithInputPlugin,
-    RelayPlugin,
     ShieldPlugin,
+    RelayPlugin,
   ],
 
   scopeAuth: {
-    defaultStrategy: "any",
-    treatErrorsAsUnauthorized: false,
-
     authScopes: async (ctx) => {
-      console.log("authScopes", ctx.event.headers);
-      const sessionData = await ctx.event.context.auth.api.getSession(ctx.event);
-      console.log("sessionData", sessionData);
-
-      if (!sessionData) {
-        return {
-          loggedIn: false,
-          admin: false,
-          organization: false,
-          organizationOwner: false,
-          organizationMember: false,
-        };
-      }
-
-      const session = sessionData?.session;
-      const user = sessionData?.user;
-
-      if (!session || !user) {
-        return {
-          loggedIn: false,
-          admin: false,
-          organization: false,
-          organizationOwner: false,
-          organizationMember: false,
-        };
-      }
+      console.log("authScopes", ctx);
 
       return {
-        loggedIn:
-          user !== null,
+        logged:
+          ctx.user !== null,
         admin:
-          user.role === "admin",
+          ctx.user?.role === "admin",
         organization:
-          session.activeOrganizationId !== null,
+          ctx.sessionCache?.activeOrganizationId !== null,
         organizationOwner:
-          user.role === "owner" &&
-          session.activeOrganizationId === session.activeOrganizationId,
-        organizationMember: user.role === "member" &&
-          session.activeOrganizationId === session.activeOrganizationId,
+          ctx.user?.role === "owner" &&
+          ctx.sessionCache?.activeOrganizationId === ctx.sessionCache?.activeOrganizationId,
+        organizationMember: ctx.user?.role === "member" &&
+          ctx.sessionCache?.activeOrganizationId === ctx.sessionCache?.activeOrganizationId,
       };
     },
   },

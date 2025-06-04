@@ -49,7 +49,7 @@ export function addReviewFlowTypes(builder: Builder) {
         status: t.arg({ type: reviewFlowStatusEnum, required: false }),
       },
       authScopes: {
-        loggedIn: true,
+        logged: true,
       },
       resolve: async (_, args, { db, member: user }) => {
         if (!user) {
@@ -111,7 +111,7 @@ export function addReviewFlowTypes(builder: Builder) {
         id: t.arg.id({ required: true }),
       },
       authScopes: {
-        loggedIn: true,
+        logged: true,
       },
       resolve: async (_, args, { db, member: user }) => {
         if (!user) {
@@ -160,7 +160,7 @@ export function addReviewFlowTypes(builder: Builder) {
         formId: t.arg.id({ required: true }),
       },
       authScopes: {
-        loggedIn: true,
+        logged: true,
       },
       resolve: async (_, args, { db, member: user }) => {
         if (!user) {
@@ -215,10 +215,10 @@ export function addReviewFlowTypes(builder: Builder) {
         input: t.arg({ type: CreateReviewFlowInput, required: true }),
       },
       authScopes: {
-        loggedIn: true,
+        logged: true,
       },
       resolve: async (_, args, context) => {
-        if (!context.session?.activeOrganizationId) {
+        if (!context.sessionCache?.activeOrganizationId) {
           throw new Error('Not authenticated or no active organization');
         }
 
@@ -232,7 +232,7 @@ export function addReviewFlowTypes(builder: Builder) {
         }
 
         // Check if form belongs to the active organization
-        if (form.organizationId !== context.session.activeOrganizationId) {
+        if (form.organizationId !== context.sessionCache.activeOrganizationId) {
           throw new Error('Form does not belong to your active organization');
         }
 
@@ -240,7 +240,7 @@ export function addReviewFlowTypes(builder: Builder) {
         const member = await context.db.query.members.findFirst({
           where: {
             userId: context.member?.id,
-            organizationId: context.session.activeOrganizationId,
+            organizationId: context.sessionCache.activeOrganizationId,
           },
         });
 
@@ -258,7 +258,7 @@ export function addReviewFlowTypes(builder: Builder) {
         const reviewFlowData = {
           id: reviewFlowId,
           formId: args.input.formId as string,
-          organizationId: context.session.activeOrganizationId,
+          organizationId: context.sessionCache.activeOrganizationId,
           status: 'open' as const,
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -302,7 +302,7 @@ export function addReviewFlowTypes(builder: Builder) {
         input: t.arg({ type: UpdateReviewFlowInput, required: true }),
       },
       authScopes: {
-        loggedIn: true,
+        logged: true,
       },
       resolve: async (_, args, context) => {
         if (!context.member) {

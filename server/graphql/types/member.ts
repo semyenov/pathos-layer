@@ -43,7 +43,7 @@ export function addMemberTypes(builder: Builder) {
         }),
       },
       resolve: async (_, args, context) => {
-        if (!context.session?.userId || !context.session?.activeOrganizationId) {
+        if (!context.sessionCache?.userId || !context.sessionCache?.activeOrganizationId) {
           throw new Error('Not authenticated or no active organization');
         }
 
@@ -52,7 +52,7 @@ export function addMemberTypes(builder: Builder) {
           userId: args.input.userId,
           organizationId: args.input.organizationId,
           role: args.input.role as 'owner' | 'reviewer' | 'executor' | 'member',
-          lastModifiedBy: context.session.userId,
+          lastModifiedBy: context.sessionCache.userId,
           createdAt: new Date(),
           updatedAt: new Date(),
         });
@@ -87,10 +87,10 @@ export function addMemberTypes(builder: Builder) {
         input: t.arg({ type: UpdateMemberInputType, required: true }),
       },
       authScopes: {
-        loggedIn: true,
+        logged: true,
       },
       resolve: async (_, args, context) => {
-        if (!context.session?.userId || !context.session?.activeOrganizationId) {
+        if (!context.sessionCache?.userId || !context.sessionCache?.activeOrganizationId) {
           throw new Error('Not authenticated or no active organization');
         }
 
@@ -120,11 +120,11 @@ export function addMemberTypes(builder: Builder) {
         id: t.arg.id({ required: true }),
       },
       authScopes: {
-        loggedIn: true,
+        logged: true,
       },
 
       resolve: async (_, args, context) => {
-        if (!context.session?.userId || !context.session?.activeOrganizationId) {
+        if (!context.sessionCache?.userId || !context.sessionCache?.activeOrganizationId) {
           throw new Error('Not authenticated or no active organization');
         }
 

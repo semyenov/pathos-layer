@@ -32,10 +32,10 @@ export function addCommentTypes(builder: Builder) {
         reviewFlowId: t.arg.string({ required: true }),
       },
       authScopes: {
-        loggedIn: true,
+        logged: true,
       },
       resolve: async (_, args, context) => {
-        if (!context.session) {
+        if (!context.sessionCache) {
           throw new Error('Not authenticated');
         }
 
@@ -65,10 +65,10 @@ export function addCommentTypes(builder: Builder) {
         formFieldId: t.arg.id({ required: true }),
       },
       authScopes: {
-        loggedIn: true,
+        logged: true,
       },
       resolve: async (_, args, context) => {
-        if (!context.session) {
+        if (!context.sessionCache) {
           throw new Error('Not authenticated');
         }
 
@@ -98,18 +98,18 @@ export function addCommentTypes(builder: Builder) {
         input: t.arg({ type: CreateCommentInputType, required: true }),
       },
       authScopes: {
-        loggedIn: true,
+        logged: true,
       },
       resolve: async (_, args, context) => {
-        if (!context.session) {
+        if (!context.sessionCache) {
           throw new Error('Not authenticated or no active organization');
         }
 
         // Find the member ID for the current user in the active organization
         const membership = await context.db.query.members.findFirst({
           where: {
-            userId: context.session.userId,
-            organizationId: context.session.activeOrganizationId ?? undefined,
+            userId: context.sessionCache.userId,
+            organizationId: context.sessionCache.activeOrganizationId ?? undefined,
           },
         });
         if (!membership) {
@@ -120,7 +120,7 @@ export function addCommentTypes(builder: Builder) {
         const reviewFlow = await context.db.query.reviewFlows.findFirst({
           where: {
             id: args.input.reviewFlowId,
-            organizationId: context.session.activeOrganizationId || 'default',
+            organizationId: context.sessionCache.activeOrganizationId || 'default',
           },
         });
 
@@ -168,10 +168,10 @@ export function addCommentTypes(builder: Builder) {
         id: t.arg.id({ required: true }),
       },
       authScopes: {
-        loggedIn: true,
+        logged: true,
       },
       resolve: async (_, args, context) => {
-        if (!context.session) {
+        if (!context.sessionCache) {
           throw new Error('Not authenticated');
         }
 

@@ -9,7 +9,6 @@ import { addCommentTypes } from "./types/comment";
 import { addReviewFlowTypes } from "./types/reviewFlow";
 import { addSessionTypes } from "./types/session";
 import { addMemberTypes } from "./types/member";
-import "./shield";
 
 const builder = useBuilder();
 
