@@ -13,7 +13,7 @@ const db = drizzle(connectionString, {
   schema: tablesSchema,
   relations: relationsSchema,
   casing: 'snake_case',
-  logger: true,
+  logger: false,
 });
 
 export type DB = typeof db;

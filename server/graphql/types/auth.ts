@@ -1,4 +1,3 @@
-import type { CookieSameSite } from "@whatwg-node/cookie-store";
 import type { Builder } from "../builder";
 
 import { eq } from "drizzle-orm";
@@ -12,9 +11,15 @@ export function addAuthTypes(builder: Builder) {
       userId: t.exposeID("userId"),
       providerId: t.exposeID("providerId"),
       accessToken: t.exposeString("accessToken", { nullable: true }),
-      accessTokenExpiresAt: t.expose("accessTokenExpiresAt", { type: "Date", nullable: true }),
+      accessTokenExpiresAt: t.expose("accessTokenExpiresAt", {
+        type: "Date",
+        nullable: true,
+      }),
       refreshToken: t.exposeString("refreshToken", { nullable: true }),
-      refreshTokenExpiresAt: t.expose("refreshTokenExpiresAt", { type: "Date", nullable: true }),
+      refreshTokenExpiresAt: t.expose("refreshTokenExpiresAt", {
+        type: "Date",
+        nullable: true,
+      }),
       idToken: t.exposeString("idToken", { nullable: true }),
       scope: t.exposeString("scope", { nullable: true }),
       createdAt: t.expose("createdAt", { type: "Date" }),
@@ -58,12 +63,8 @@ export function addAuthTypes(builder: Builder) {
         loggedIn: true,
       },
       resolve: async (_, __, context) => {
-        if (!context.session?.userId) {
-          throw new Error("Not authenticated");
-        }
-
         const foundUser = await context.db.query.users.findFirst({
-          where: { id: context.session.userId },
+          where: { id: context.user!.id },
           with: {
             members: {
               with: {
@@ -137,7 +138,6 @@ export function addAuthTypes(builder: Builder) {
           throw new Error("Invalid email or password");
         }
 
-        const { authCookies: { sessionToken: { name, options } } } = await context.auth.$context;
         const { token } = await context.auth.api.signInEmail({
           body: {
             email: input.email,
@@ -151,16 +151,6 @@ export function addAuthTypes(builder: Builder) {
         if (!token) {
           throw new Error("Failed to login");
         }
-
-        await context.cookies.set({
-          ...options,
-
-          name: name,
-          value: token ?? "",
-          domain: options.domain ?? null,
-          expires: options.expires ?? null,
-          sameSite: options.sameSite as CookieSameSite,
-        });
 
         return token;
       },
@@ -186,28 +176,17 @@ export function addAuthTypes(builder: Builder) {
           },
         });
 
-        if (!token) {
+        if (!token)  {
           throw new Error("Failed to create user");
         }
 
         const {
           authCookies: {
-            sessionToken: {
-              name,
-              options,
-            }
-          }
+            sessionToken: { name },
+          },
         } = await context.auth.$context;
 
-        await context.cookies.set({
-          ...options,
-
-          name: name,
-          value: token,
-          domain: options.domain ?? null,
-          expires: options.expires ?? null,
-          sameSite: options.sameSite as CookieSameSite,
-        });
+        context.request.headers.set(name, token);
 
         return token;
       },
@@ -227,10 +206,11 @@ export function addAuthTypes(builder: Builder) {
 
         if (session.success) {
           const {
-            authCookies: { sessionToken: { name } }
+            authCookies: {
+              sessionToken: { name },
+            },
           } = await context.auth.$context;
-          context.cookies.delete(name);
-
+          context.request.headers.delete(name);
           return true;
         }
 
@@ -242,16 +222,48 @@ export function addAuthTypes(builder: Builder) {
   const UpdateUserInputType = builder.inputType("UpdateUserInput", {
     fields: (t) => ({
       name: t.string({ required: false, description: "The name of the user" }),
-      email: t.string({ required: false, description: "The email of the user" }),
-      password: t.string({ required: false, description: "The password of the user" }),
-      image: t.string({ required: false, description: "The image of the user" }),
-      banned: t.boolean({ required: false, description: "Whether the user is banned" }),
-      banReason: t.string({ required: false, description: "The reason the user is banned" }),
-      banExpires: t.int({ required: false, description: "The date and time the user's ban expires" }),
-      role: t.field({ required: false, type: UserRoleEnumType, defaultValue: "user", description: "The role of the user" }),
-      emailVerified: t.boolean({ required: false, description: "Whether the user's email is verified" }),
-      createdAt: t.int({ required: false, description: "The date and time the user was created" }),
-      updatedAt: t.int({ required: false, description: "The date and time the user was last updated" }),
+      email: t.string({
+        required: false,
+        description: "The email of the user",
+      }),
+      password: t.string({
+        required: false,
+        description: "The password of the user",
+      }),
+      image: t.string({
+        required: false,
+        description: "The image of the user",
+      }),
+      banned: t.boolean({
+        required: false,
+        description: "Whether the user is banned",
+      }),
+      banReason: t.string({
+        required: false,
+        description: "The reason the user is banned",
+      }),
+      banExpires: t.int({
+        required: false,
+        description: "The date and time the user's ban expires",
+      }),
+      role: t.field({
+        required: false,
+        type: UserRoleEnumType,
+        defaultValue: "user",
+        description: "The role of the user",
+      }),
+      emailVerified: t.boolean({
+        required: false,
+        description: "Whether the user's email is verified",
+      }),
+      createdAt: t.int({
+        required: false,
+        description: "The date and time the user was created",
+      }),
+      updatedAt: t.int({
+        required: false,
+        description: "The date and time the user was last updated",
+      }),
     }),
   });
 
@@ -268,13 +280,19 @@ export function addAuthTypes(builder: Builder) {
         loggedIn: true,
       },
       resolve: async (_, { input }, context) => {
-        if (!context.session?.userId) {
+        if (!context.user) {
           throw new Error("Not authenticated");
         }
 
+        if (context.user.id !== context.session?.userId) {
+          throw new Error("Not authorized");
+        }
+
         const foundUser = await context.db.query.users.findFirst({
-          where: { id: context.session.userId },
-          with: { accounts: true },
+          where: { id: context.user.id },
+          with: {
+            accounts: true,
+          },
         });
 
         if (!foundUser) {
@@ -292,14 +310,17 @@ export function addAuthTypes(builder: Builder) {
           role,
           emailVerified,
           createdAt,
-          updatedAt
+          updatedAt,
         } = input;
 
         if (password) {
           const hashedPassword = hash(password, "sha256");
-          await context.db.update(tables.accounts).set({
-            password: hashedPassword,
-          }).where(eq(tables.accounts.userId, foundUser.id));
+          await context.db
+            .update(tables.accounts)
+            .set({
+              password: hashedPassword,
+            })
+            .where(eq(tables.accounts.userId, foundUser.id));
         }
 
         await context.db
@@ -316,11 +337,16 @@ export function addAuthTypes(builder: Builder) {
           })
           .where(eq(tables.users.id, foundUser.id));
 
-        if (banReason) {
-          await context.db.update(tables.users).set({
-            banReason: banReason,
-            banExpires: banExpires ? new Date(banExpires) : foundUser.banExpires,
-          }).where(eq(tables.users.id, foundUser.id));
+        if (banReason)  {
+          await context.db
+            .update(tables.users)
+            .set({
+              banReason: banReason,
+              banExpires: banExpires
+                ? new Date(banExpires)
+                : foundUser.banExpires ?? null,
+            })
+            .where(eq(tables.users.id, foundUser.id));
         }
 
         const updatedUser = await context.db.query.users.findFirst({

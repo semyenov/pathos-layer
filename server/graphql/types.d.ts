@@ -1,3 +1,4 @@
+import type { GeoJSON } from 'geojson';
 import type { CookieStore } from '@whatwg-node/cookie-store';
 
 import type {
@@ -32,6 +33,10 @@ export type Scalars = {
   JSON: {
     Input: unknown;
     Output: unknown;
+  };
+  GeoJSON: {
+    Input: GeoJSON;
+    Output: GeoJSON;
   };
 };
 

@@ -1,6 +1,5 @@
-import type { AuthScopes, Context, Scalars } from "./types";
+import { DateResolver, JSONResolver, ObjectIDResolver, GeoJSONResolver } from "graphql-scalars";
 
-import { DateResolver, JSONResolver, ObjectIDResolver } from "graphql-scalars";
 import DrizzlePlugin from "@pothos/plugin-drizzle";
 import RelayPlugin from "@pothos/plugin-relay";
 import ScopeAuthPlugin from "@pothos/plugin-scope-auth";
@@ -9,6 +8,8 @@ import ValidationPlugin from "@pothos/plugin-validation";
 import WithInputPlugin from "@pothos/plugin-with-input";
 import { getTableConfig } from "drizzle-orm/pg-core";
 import SchemaBuilder from "@pothos/core";
+
+import type { AuthScopes, Context, Scalars } from "./types";
 
 const builder = new SchemaBuilder<{
   Defaults: "v4";
@@ -23,9 +24,42 @@ const builder = new SchemaBuilder<{
   defaults: "v4",
   defaultFieldNullability: false,
 
+  validationOptions: {
+    validationError: (error) => {
+      console.log("validation error", error);
+      return error;
+    },
+  },
+
+  tracing: {
+    default() {
+      return true;
+    },
+    wrap(config) {
+      return async (...params: Parameters<typeof config>) => {
+        const [source, args, context, info] = params;
+        const start = performance.now();
+        const result = await config(source, args, context, info);
+        const end = performance.now();
+        const duration = end - start;
+
+        console.log({
+          fieldName: info.fieldName,
+          args: JSON.stringify(args),
+          duration,
+        });
+
+        return result;
+      };
+    },
+  },
+
   withInput: {
     typeOptions: {
       name: (options) => `${options.parentTypeName}${options.fieldName}Input`,
+    },
+    argOptions: {
+      required: true,
     },
   },
 
@@ -61,18 +95,14 @@ const builder = new SchemaBuilder<{
   ],
 
   scopeAuth: {
-    authorizeOnSubscribe: true,
-    runScopesOnType: true,
-
-    authScopes: async (context) => {
-      console.log(context.user);
+    authScopes: (context) => {
       return {
         loggedIn: context.user !== null,
         admin: context.user?.role === "admin",
         organization: context.session?.activeOrganizationId !== null,
-        organizationOwner: context.member?.role === "owner" &&
-          context.member?.organizationId ===
-          context.session?.activeOrganizationId,
+        organizationOwner:
+          context.member?.role === "owner" &&
+          context.member?.organizationId === context.session?.activeOrganizationId,
       };
     },
   },
@@ -81,6 +111,7 @@ const builder = new SchemaBuilder<{
 builder.addScalarType("ID", ObjectIDResolver);
 builder.addScalarType("Date", DateResolver);
 builder.addScalarType("JSON", JSONResolver);
+builder.addScalarType("GeoJSON", GeoJSONResolver);
 
 builder.queryType({ description: "The root query type" });
 builder.mutationType({ description: "The root mutation type" });
