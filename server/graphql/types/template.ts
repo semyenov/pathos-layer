@@ -298,12 +298,12 @@ export function addTemplateTypes(builder: Builder) {
           title: args.input.title,
           description: args.input.description || null,
           creatorMemberId: context.member.id,
-          organizationId: context.session.activeOrganizationId ?? undefined,
+          organizationId: context.session.activeOrganizationId || 'default',
           status: 'draft' as const,
           updatedAt: new Date(),
           templateId: args.input.templateId,
-          lastModifiedBy: context.member.id,
-          executorMemberId: context.member.id,
+          lastModifiedBy: context.user?.id ?? 'default' as string,
+          executorMemberId: context.member?.id ?? 'default' as string,
           createdAt: new Date(),
         });
 
@@ -314,9 +314,10 @@ export function addTemplateTypes(builder: Builder) {
               args.input.fields.map(
                 templateField => ({
                   id: randomUUID(),
-                  lastModifiedBy: context.member.id,
-                  templateFieldId: templateField.id ?? '',
-                  executorMemberId: context.member.id,
+                  lastModifiedBy: context.user?.id ?? 'default' as string,
+                  executorMemberId: context.member?.id ?? 'default' as string,
+                  executorMember: context.member ?? null,
+                  templateFieldId: templateField.id ?? 'default' as string,
                   formId: formId,
                   name: templateField.name,
                   type: templateField.type,
@@ -386,8 +387,8 @@ export function addTemplateTypes(builder: Builder) {
           templateId: args.input.templateId,
           status: 'draft' as const,
           updatedAt: new Date(),
-          lastModifiedBy: context.member.id,
-          executorMemberId: context.member.id,
+          lastModifiedBy: context.user?.id ?? 'default' as string,
+          executorMemberId: context.member?.id ?? 'default' as string,
         });
 
         // Create the form fields from template fields
@@ -395,8 +396,8 @@ export function addTemplateTypes(builder: Builder) {
           await context.db.insert(tables.formFields).values(
             template.fields.map((templateField) => ({
               id: randomUUID(),
-              lastModifiedBy: context.member.id,
-              executorMemberId: context.member.id,
+              lastModifiedBy: context.user?.id ?? 'default' as string,
+              executorMemberId: context.member?.id ?? 'default' as string,
               formId: formId,
               name: templateField.name,
               type: templateField.type as unknown as 'number' | 'date' | 'text' | 'textarea' | 'select' | 'checkbox' | 'radio' | 'file',
@@ -572,8 +573,8 @@ export function addTemplateTypes(builder: Builder) {
           id: templateId,
           name: args.input.name,
           description: args.input.description || null,
-          lastModifiedBy: context.member?.id,
-          creatorMemberId: context.member?.id,
+          lastModifiedBy: context.user?.id ?? 'default' as string,
+          creatorMemberId: context.member?.id ?? 'default' as string,
           organizationId: context.session?.activeOrganizationId || 'default',
           version: 1,
           createdAt: new Date(),
@@ -593,7 +594,7 @@ export function addTemplateTypes(builder: Builder) {
               options: field.options || null,
               defaultValue: field.defaultValue || null,
               validationRules: field.validationRules || null,
-              lastModifiedBy: context.member?.id,
+              lastModifiedBy: context.user?.id ?? 'default' as string,
               createdAt: new Date(),
               updatedAt: new Date(),
             }))
@@ -645,7 +646,7 @@ export function addTemplateTypes(builder: Builder) {
         // Update template basic info
         const updatedTemplate = await context.db.update(tables.templates)
           .set({
-            lastModifiedBy: context.member?.id || 'default',
+            lastModifiedBy: context.user?.id ?? 'default' as string,
             updatedAt: new Date(),
             version: template.version + 1,
             name: args.input.name || template.name,
@@ -676,7 +677,7 @@ export function addTemplateTypes(builder: Builder) {
               options: field.options || null,
               defaultValue: field.defaultValue || null,
               validationRules: field.validationRules || null,
-              lastModifiedBy: context.member?.id,
+              lastModifiedBy: context.user?.id ?? 'default' as string,
             }))
           );
         }
@@ -715,12 +716,16 @@ export function addTemplateTypes(builder: Builder) {
         // Check if template exists
         const template = await context.db.query.templates.findFirst({
           where: { id: args.id, organizationId: context.session.activeOrganizationId || 'default' },
-          with: { fields: true },
+          with: { fields: true, forms: true },
         });
 
         if (!template) {
           throw new Error('Form template not found');
         }
+
+        // Delete all forms
+        await context.db.delete(tables.forms)
+          .where(eq(tables.forms.templateId, args.id as string));
 
         // Delete all template fields
         await context.db.delete(tables.templateFields)

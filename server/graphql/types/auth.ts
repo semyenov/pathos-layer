@@ -65,19 +65,15 @@ export function addAuthTypes(builder: Builder) {
       resolve: async (_, __, context) => {
         const foundUser = await context.db.query.users.findFirst({
           where: { id: context.user!.id },
-          with: {
-            members: {
-              with: {
-                organization: true,
-              },
-            },
-            sessions: true,
-            accounts: true,
-          },
+          with: { members: true, sessions: true, accounts: true },
         });
 
         if (!foundUser) {
           throw new Error("User not found");
+        }
+
+        if (foundUser.banned) {
+          throw new Error("User is banned");
         }
 
         return foundUser;
@@ -124,33 +120,22 @@ export function addAuthTypes(builder: Builder) {
         input: t.arg({ type: LoginInputType, required: true }),
       },
       resolve: async (_, { input }, context) => {
-        const session = await context.auth.api.signInEmail({
-          body: {
-            email: input.email,
-            password: input.password,
-          },
-          headers: {
-            "Content-Type": "application/json",
-          },
-        });
-
-        if (!session) {
-          throw new Error("Invalid email or password");
-        }
-
         const { token } = await context.auth.api.signInEmail({
-          body: {
-            email: input.email,
-            password: input.password,
-          },
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: context.event.headers,
+          body: input,
         });
 
         if (!token) {
           throw new Error("Failed to login");
         }
+
+        await context.event.context.auth.api.getSession({
+          headers: context.event.headers,
+          query: {
+            disableCookieCache: true,
+            disableRefresh: true,
+          },
+        });
 
         return token;
       },
@@ -166,27 +151,25 @@ export function addAuthTypes(builder: Builder) {
       },
       resolve: async (_, { input }, context) => {
         const { token } = await context.auth.api.signUpEmail({
-          body: {
-            email: input.email,
-            password: input.password,
-            name: input.name,
-          },
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: context.event.headers,
+          body: input,
         });
 
-        if (!token)  {
+        if (!token) {
           throw new Error("Failed to create user");
         }
 
-        const {
-          authCookies: {
-            sessionToken: { name },
-          },
-        } = await context.auth.$context;
-
-        context.request.headers.set(name, token);
+        const { authCookies: { sessionToken: { name, options: cookieOptions } } } =
+          await context.auth.$context;
+        setCookie(context.event, name, token, {
+          ...cookieOptions,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax" as const,
+          domain:
+            process.env.NODE_ENV === "production"
+              ? "formflow.ai"
+              : "localhost",
+        });
 
         return token;
       },
@@ -201,16 +184,14 @@ export function addAuthTypes(builder: Builder) {
       },
       resolve: async (_, __, context) => {
         const session = await context.auth.api.signOut({
-          headers: { "Content-Type": "application/json" },
+          headers: context.event.headers,
         });
 
         if (session.success) {
-          const {
-            authCookies: {
-              sessionToken: { name },
-            },
-          } = await context.auth.$context;
-          context.request.headers.delete(name);
+          const { authCookies: { sessionToken: { name: cookieName } } } =
+            await context.auth.$context;
+
+          deleteCookie(context.event, cookieName);
           return true;
         }
 
@@ -317,9 +298,7 @@ export function addAuthTypes(builder: Builder) {
           const hashedPassword = hash(password, "sha256");
           await context.db
             .update(tables.accounts)
-            .set({
-              password: hashedPassword,
-            })
+            .set({ password: hashedPassword })
             .where(eq(tables.accounts.userId, foundUser.id));
         }
 
@@ -337,7 +316,7 @@ export function addAuthTypes(builder: Builder) {
           })
           .where(eq(tables.users.id, foundUser.id));
 
-        if (banReason)  {
+        if (banReason) {
           await context.db
             .update(tables.users)
             .set({

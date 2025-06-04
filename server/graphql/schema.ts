@@ -1,4 +1,6 @@
 import { useBuilder } from "./builder";
+import { printSchema } from "graphql";
+import fs from "node:fs";
 
 import { addAuthTypes } from "./types/auth";
 import { addOrganizationTypes } from "./types/organization";
@@ -22,3 +24,7 @@ const schema = builder.toSchema({ sortSchema: true });
 
 export type Schema = typeof schema;
 export const useSchema = (): Schema => schema;
+
+if (process.env.NODE_ENV === 'development') {
+  fs.writeFileSync('schema.graphql', printSchema(schema));
+}

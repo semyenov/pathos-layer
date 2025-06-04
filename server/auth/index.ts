@@ -31,18 +31,16 @@ export const auth = betterAuth({
   session: {
     storeSessionInDatabase: true,
     preserveSessionInDatabase: true,
+    cookieCache: { enabled: false },
     expiresIn: 60 * 60 * 30, // 30 hours
     freshAge: 60 * 60, // 1 hour
     updateAge: 60 * 60 * 2, // 2 hours
     cookie: {
-      httpOnly: true,
+      sameSite: "lax",
       secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 60 * 60 * 30, // 30 hours
-      expires: new Date(Date.now() + 60 * 60 * 30 * 1000), // 30 hours
-      path: "/",
-      domain:
-        process.env.NODE_ENV === "production" ? "formflow.ai" : "localhost",
+      domain: process.env.NODE_ENV === "production"
+        ? "formflow.ai"
+        : "localhost",
     },
   },
 

@@ -1,0 +1,394 @@
+type Account implements Node {
+  accessToken: String
+  accessTokenExpiresAt: Date
+  createdAt: Date!
+  id: ID!
+  idToken: String
+  providerId: ID!
+  refreshToken: String
+  refreshTokenExpiresAt: Date
+  scope: String
+  updatedAt: Date!
+  user: User
+  userId: ID!
+}
+
+type Comment implements Node {
+  content: String!
+  createdAt: Date!
+  formFieldId: ID
+  id: ID!
+  member: Member!
+  reviewFlowId: ID!
+}
+
+input CreateCommentInput {
+  content: String!
+  formFieldId: ID
+  reviewFlowId: ID!
+}
+
+input CreateFormFromTemplateInput {
+  description: String
+  templateId: ID!
+  title: String!
+}
+
+input CreateFormInput {
+  description: String
+  fields: [FormFieldInput!]!
+  templateId: ID!
+  title: String!
+}
+
+input CreateMemberInput {
+  organizationId: ID!
+  role: String!
+  userId: ID!
+}
+
+input CreateOrganizationInput {
+  logo: String
+  name: String!
+  slug: String
+}
+
+input CreateReviewFlowInput {
+  formId: ID!
+}
+
+input CreateTemplateInput {
+  description: String
+  fields: [TemplateFieldInput!]!
+  name: String!
+}
+
+"""
+A date string, such as 2007-12-03, compliant with the `full-date` format outlined in section 5.6 of the RFC 3339 profile of the ISO 8601 standard for representation of dates and times using the Gregorian calendar.
+"""
+scalar Date
+
+type Form implements Node {
+  createdAt: Date!
+  description: String
+  fields: [FormField!]!
+  id: ID!
+  status: FormStatus!
+  template: Template
+  title: String
+  updatedAt: Date!
+  version: Int
+}
+
+type FormField implements Node {
+  id: ID!
+  name: String!
+  options: String
+  order: Int!
+  required: Boolean!
+  status: FormFieldStatus!
+  templateField: TemplateField
+  templateFieldId: ID
+  type: FormFieldTypeEnum!
+  value: String
+}
+
+input FormFieldInput {
+  id: ID
+  name: String!
+  options: String
+  order: Int!
+  required: Boolean!
+  type: FormFieldTypeEnum!
+}
+
+enum FormFieldStatus {
+  approved
+  draft
+  rejected
+}
+
+enum FormFieldTypeEnum {
+  checkbox
+  date
+  file
+  number
+  radio
+  select
+  text
+  textarea
+}
+
+enum FormStatus {
+  approved
+  draft
+  needsChanges
+  rejected
+  underReview
+}
+
+"""
+A GeoJSON object as defined by RFC 7946: https://datatracker.ietf.org/doc/html/rfc7946
+"""
+scalar GeoJSON
+
+input InviteMemberInput {
+  email: String!
+  organizationId: ID!
+  role: String!
+}
+
+"""
+The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
+"""
+scalar JSON
+
+input LoginInput {
+  email: String!
+  password: String!
+}
+
+type Member implements Node {
+  createdAt: Date
+  id: ID!
+  lastModifiedBy: ID
+  organization: Organization
+  organizationId: ID
+  role: MemberRole
+  userId: ID
+}
+
+enum MemberRole {
+  executor
+  member
+  owner
+  reviewer
+}
+
+"""The root mutation type"""
+type Mutation {
+  addComment(input: CreateCommentInput!): Comment!
+  createForm(input: CreateFormInput!): Form!
+  createFormFromTemplate(input: CreateFormFromTemplateInput!): Form!
+  createMember(input: CreateMemberInput!): Member!
+  createOrganization(input: CreateOrganizationInput!): Organization!
+  createReviewFlow(input: CreateReviewFlowInput!): ReviewFlow!
+  createTemplate(input: CreateTemplateInput!): Template!
+  deleteComment(id: ID!): Boolean!
+  deleteForm(id: ID!): Boolean!
+  deleteMember(id: ID!): Boolean!
+  deleteTemplate(id: ID!): Boolean!
+  inviteMember(input: InviteMemberInput!): Boolean!
+  login(input: LoginInput!): String!
+  logout: Boolean!
+  register(input: RegisterInput!): String!
+
+  """Set the active organization for the current user."""
+  setActiveOrganization(organizationId: ID!): Boolean!
+  updateForm(input: UpdateFormInput!): Form!
+  updateMember(input: UpdateMemberInput!): Member!
+  updateOrganization(id: ID!, input: UpdateOrganizationInput!): Organization!
+  updateReviewFlow(id: ID!, input: UpdateReviewFlowInput!): ReviewFlow!
+  updateTemplate(id: ID!, input: UpdateTemplateInput!): Template!
+  updateUser(input: UpdateUserInput!): User!
+}
+
+interface Node {
+  id: ID!
+}
+
+type Organization implements Node {
+  createdAt: Date!
+  id: ID!
+  logo: String
+  members: [Member!]
+  name: String!
+  slug: String
+}
+
+"""The root query type"""
+type Query {
+  fieldComments(formFieldId: ID!, reviewFlowId: ID!): [Comment!]!
+  form(id: ID!): Form!
+  formReviewFlows(formId: ID!): [ReviewFlow!]!
+  forms: [Form!]!
+  me: User!
+  node(id: ID!): Node
+  nodes(ids: [ID!]!): [Node]!
+  organization(id: ID!): Organization!
+  organizationReviewFlows(organizationId: ID!, status: ReviewFlowStatus): [ReviewFlow!]!
+  organizations: [Organization!]!
+  reviewFlow(id: ID!): ReviewFlow!
+  reviewFlowComments(reviewFlowId: String!): [Comment!]!
+
+  """Get the current user's session."""
+  session: Session!
+  template(id: ID!): Template!
+  templates: [Template!]!
+  users: [User!]!
+}
+
+input RegisterInput {
+  email: String!
+  name: String!
+  password: String!
+}
+
+type ReviewFlow implements Node {
+  comments: [Comment!]
+  createdAt: Date!
+  form: Form
+  formId: ID!
+  id: ID!
+  lastModifiedBy: ID
+  organizationId: ID!
+  status: ReviewFlowStatus!
+  updatedAt: Date!
+  version: Int!
+}
+
+enum ReviewFlowStatus {
+  closed
+  open
+}
+
+"""A session is a user's session on the platform."""
+type Session implements Node {
+  activeOrganizationId: ID
+  createdAt: Date!
+  expiresAt: Date!
+  id: ID!
+  impersonatedBy: ID
+  ipAddress: String
+  token: String
+  updatedAt: Date!
+  userAgent: String
+  userId: ID!
+}
+
+type Template implements Node {
+  createdAt: Date!
+  description: String
+  fields: [TemplateField!]!
+  id: ID!
+  name: String!
+  updatedAt: Date!
+  version: Int!
+}
+
+type TemplateField implements Node {
+  defaultValue: String
+  id: ID!
+  name: String!
+  options: String
+  order: Int!
+  required: Boolean!
+  type: TemplateFieldTypeEnum!
+  validationRules: String
+}
+
+input TemplateFieldInput {
+  defaultValue: String
+  id: String
+  name: String!
+  options: String
+  order: Int!
+  required: Boolean!
+  type: TemplateFieldTypeEnum!
+  validationRules: String
+}
+
+enum TemplateFieldTypeEnum {
+  checkbox
+  date
+  file
+  number
+  radio
+  select
+  text
+  textarea
+}
+
+input UpdateFormInput {
+  description: String
+  id: ID!
+  title: String!
+}
+
+input UpdateMemberInput {
+  id: ID!
+  role: String!
+}
+
+input UpdateOrganizationInput {
+  logo: String
+  name: String
+  slug: String
+}
+
+input UpdateReviewFlowInput {
+  status: ReviewFlowStatus
+}
+
+input UpdateTemplateInput {
+  description: String = null
+  fields: [TemplateFieldInput!]
+  name: String = null
+}
+
+input UpdateUserInput {
+  """The date and time the user's ban expires"""
+  banExpires: Int
+
+  """The reason the user is banned"""
+  banReason: String
+
+  """Whether the user is banned"""
+  banned: Boolean
+
+  """The date and time the user was created"""
+  createdAt: Int
+
+  """The email of the user"""
+  email: String
+
+  """Whether the user's email is verified"""
+  emailVerified: Boolean
+
+  """The image of the user"""
+  image: String
+
+  """The name of the user"""
+  name: String
+
+  """The password of the user"""
+  password: String
+
+  """The role of the user"""
+  role: UserRole = user
+
+  """The date and time the user was last updated"""
+  updatedAt: Int
+}
+
+type User implements Node {
+  accounts: [Account!]
+  banExpires: Date
+  banReason: String
+  banned: Boolean
+  createdAt: Date!
+  email: String!
+  emailVerified: Boolean
+  id: ID!
+  image: String
+  members: [Member!]
+  name: String!
+  role: UserRole
+  sessions: [Session!]
+  updatedAt: Date!
+}
+
+enum UserRole {
+  admin
+  user
+}

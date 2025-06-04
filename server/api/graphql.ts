@@ -1,143 +1,110 @@
-import type { ServerAdapterInitialContext } from "@whatwg-node/server";
+import type { ServerAdapterInitialContext, WaitUntilFn } from "@whatwg-node/server";
 import { createYoga, renderGraphiQL, type YogaContext } from "graphql-yoga";
-import { defineEventHandler, sendWebResponse, toWebRequest, setCookie, getCookie } from "h3";
+import { defineEventHandler, sendWebResponse, toWebRequest } from "h3";
 import { shouldRenderGraphiQL } from "@ardatan/graphql-helix";
 import type { Context } from "../graphql";
 import { useSchema } from "../graphql";
+import { useDb } from "../utils/db";
+import { useAuth } from "../utils/auth";
+import { createFetch } from "@whatwg-node/fetch";
 
 declare module "h3" {
-  interface H3EventContext extends Context, ServerAdapterInitialContext { }
+  interface H3EventContext extends Context, Partial<ServerAdapterInitialContext> {
+    waitUntil: WaitUntilFn;
+  }
 }
 
 declare module "graphql-yoga" {
-  interface YogaContext
-    extends Pick<Context, "db" | "auth" | "request">,
-    ServerAdapterInitialContext { }
+  interface YogaContext extends Context, ServerAdapterInitialContext { }
 }
-
-type SessionData = {
-  session: Session | null;
-  user: User | null;
-  member: Member | null;
-  organization: Organization | null;
-};
 
 
 const yoga = createYoga<Context, YogaContext>({
   schema: useSchema(),
-  context: async (ctx) => {
-    const { authCookies: { sessionToken: { name } } } = await useAuth().$context;
-    const sessionData = await getSessionData(ctx.request.headers);
 
-    ctx.session = sessionData?.session ?? null;
-    ctx.user = sessionData?.user ?? null;
-    ctx.member = sessionData?.member ?? null;
-    ctx.organization = sessionData?.organization ?? null;
-
-    return ctx;
+  cors: {
+    origin: "*",
+    credentials: true,
   },
+
+  batching: {
+    limit: 10,
+  },
+
+  fetchAPI: createFetch({
+    useNodeFetch: true,
+    skipPonyfill: false,
+    formDataLimits: {
+      fields: 1000,
+      files: 10,
+      parts: 1000,
+      fieldNameSize: 100,
+      fileSize: 10 * 1024 * 1024,
+      fieldSize: 1000,
+      headerSize: 1000,
+    },
+  }),
+
+  context: (ctx) => ctx,
 });
 
-/**
- * Get the current session from the request context
- * @param req The request object
- * @returns The session data with user, session, member, and organization
- */
-export const getSessionData = async (
-  headers: Headers,
-): Promise<SessionData | null> => {
-  let user: User | null = null;
-  let session: Session | null = null;
-  let member: Member | null = null;
-  let organization: Organization | null = null;
 
-  const sessionData = await useAuth().api.getSession({
-    headers,
-  });
+export default defineEventHandler(async (event) => {
+  if (shouldRenderGraphiQL(toWebRequest(event))) {
+    return sendWebResponse(event,
+      new Response(renderGraphiQL({
+        endpoint: "/api/graphql",
+        shouldPersistHeaders: true,
+        credentials: "include",
+      }), {
+        status: 200,
+        statusText: "OK",
+        headers: { "Content-Type": "text/html" },
+      }),
+    );
+  }
 
-  if (
-    sessionData?.session
-    && sessionData?.user
-  ) {
-    session = sessionData.session;
-    user = sessionData.user;
+  event.context = {
+    event,
+    waitUntil: event.context.waitUntil,
 
-    const activeOrganizationId = session.activeOrganizationId;
-    if (activeOrganizationId) {
-      organization =
-        (await useDb().query.organizations.findFirst({
-          where: { id: activeOrganizationId },
+    db: useDb(),
+    auth: useAuth(),
+
+    user: null,
+    member: null,
+    session: null,
+    organization: null,
+  };
+
+  const sessionData = await event.context.auth.api.getSession(
+    toWebRequest(event),
+  );
+
+  if (sessionData) {
+    event.context.session = sessionData.session;
+    event.context.user = sessionData.user;
+
+    if (sessionData.session.activeOrganizationId) {
+      event.context.organization =
+        (await event.context.db.query.organizations.findFirst({
+          where: { id: sessionData.session.activeOrganizationId },
         })) ?? null;
 
-      member =
-        (await useDb().query.members.findFirst({
-          where: { userId: user.id, organizationId: activeOrganizationId },
+      event.context.member =
+        (await event.context.db.query.members.findFirst({
+          where: {
+            userId: event.context.user.id,
+            organizationId: sessionData.session.activeOrganizationId,
+          },
         })) ?? null;
     }
   }
 
-  return {
-    user,
-    session,
-    member,
-    organization,
-  };
-};
-
-export default defineEventHandler(async (event) => {
-  const request = toWebRequest(event);
-
-  const headers = request.headers;
-  const { authCookies: { sessionToken: { name } } } = await useAuth().$context;
-
-  const sessionToken = getCookie(event, name) ?? null;
-  if (sessionToken) {
-    headers.set('Authorization', `Bearer ${sessionToken}`);
-  }
-
-  if (shouldRenderGraphiQL(request)) {
-    const graphiql = renderGraphiQL({
-      endpoint: "/api/graphql",
-      shouldPersistHeaders: true,
-      credentials: "include",
-    });
-
-    return sendWebResponse(event, new Response(graphiql, {
-      status: 200,
-      statusText: "OK",
-      headers: { "Content-Type": "text/html" },
-    }));
-  }
-
-  // Set the database and authentication client in the context
-  event.context.db = useDb();
-  event.context.auth = useAuth();
-  event.context.request = request;
-
-  const sessionData = await getSessionData(headers);
-  if (
-    sessionData?.session
-    && sessionData?.user
-  ) {
-    event.context.session = sessionData.session;
-    event.context.user = sessionData.user;
-    event.context.member = sessionData.member ?? null;
-    event.context.organization = sessionData.organization ?? null;
-  }
-
-  if (sessionData?.session && sessionData.session.token) {
-    setCookie(event, name, sessionData.session.token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 60 * 60 * 24 * 30,
-      expires: new Date(Date.now() + 60 * 60 * 24 * 30 * 1000),
-      path: "/",
-      domain: process.env.NODE_ENV === "production" ? "formflow.ai" : "localhost",
-    });
-  }
-
-  // Handle the request
-  const response = await yoga.handle(request, event.context);
-  return sendWebResponse(event, response);
+  return sendWebResponse(event,
+    await yoga.handleRequest(
+      toWebRequest(event),
+      event.context,
+    ),
+  );
 });

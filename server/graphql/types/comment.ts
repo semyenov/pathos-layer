@@ -185,10 +185,12 @@ export function addCommentTypes(builder: Builder) {
         }
 
         // Check if this user is the author of the comment (by checking membership)
-        const isAdmin = context.member?.role === 'admin' || context.user?.id === comment.memberId;
+        const isOwner =
+          context.member?.role === 'owner' ||
+          context.user?.id === comment.memberId;
 
-        if (!isAdmin) {
-          throw new Error('You are not authorized to delete this comment');
+        if (!isOwner) {
+          throw new Error('You are not the owner of this organization and are not authorized to delete this comment');
         }
 
         // Delete the comment

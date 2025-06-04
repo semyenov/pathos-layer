@@ -1,5 +1,6 @@
-import { DateResolver, JSONResolver, ObjectIDResolver, GeoJSONResolver } from "graphql-scalars";
+import type { Context, AuthScopes, Scalars } from "./types";
 
+import { DateResolver, JSONResolver, ObjectIDResolver, GeoJSONResolver } from "graphql-scalars";
 import DrizzlePlugin from "@pothos/plugin-drizzle";
 import RelayPlugin from "@pothos/plugin-relay";
 import ScopeAuthPlugin from "@pothos/plugin-scope-auth";
@@ -8,8 +9,6 @@ import ValidationPlugin from "@pothos/plugin-validation";
 import WithInputPlugin from "@pothos/plugin-with-input";
 import { getTableConfig } from "drizzle-orm/pg-core";
 import SchemaBuilder from "@pothos/core";
-
-import type { AuthScopes, Context, Scalars } from "./types";
 
 const builder = new SchemaBuilder<{
   Defaults: "v4";
@@ -54,28 +53,6 @@ const builder = new SchemaBuilder<{
     },
   },
 
-  withInput: {
-    typeOptions: {
-      name: (options) => `${options.parentTypeName}${options.fieldName}Input`,
-    },
-    argOptions: {
-      required: true,
-    },
-  },
-
-  relay: {
-    cursorType: "String",
-    idFieldName: "id",
-    idFieldOptions: {
-      tracing: true,
-      description: "The ID of the node",
-    },
-    nodesFieldOptions: {
-      tracing: true,
-      nullable: false,
-    },
-  },
-
   drizzle: {
     client: useDb(),
     relations: relations,
@@ -95,14 +72,49 @@ const builder = new SchemaBuilder<{
   ],
 
   scopeAuth: {
-    authScopes: (context) => {
+    defaultStrategy: "any",
+    treatErrorsAsUnauthorized: false,
+
+    authScopes: async (ctx) => {
+      console.log("authScopes", ctx.event.headers);
+      const sessionData = await ctx.event.context.auth.api.getSession(ctx.event);
+      console.log("sessionData", sessionData);
+
+      if (!sessionData) {
+        return {
+          loggedIn: false,
+          admin: false,
+          organization: false,
+          organizationOwner: false,
+          organizationMember: false,
+        };
+      }
+
+      const session = sessionData?.session;
+      const user = sessionData?.user;
+
+      if (!session || !user) {
+        return {
+          loggedIn: false,
+          admin: false,
+          organization: false,
+          organizationOwner: false,
+          organizationMember: false,
+        };
+      }
+
       return {
-        loggedIn: context.user !== null,
-        admin: context.user?.role === "admin",
-        organization: context.session?.activeOrganizationId !== null,
+        loggedIn:
+          user !== null,
+        admin:
+          user.role === "admin",
+        organization:
+          session.activeOrganizationId !== null,
         organizationOwner:
-          context.member?.role === "owner" &&
-          context.member?.organizationId === context.session?.activeOrganizationId,
+          user.role === "owner" &&
+          session.activeOrganizationId === session.activeOrganizationId,
+        organizationMember: user.role === "member" &&
+          session.activeOrganizationId === session.activeOrganizationId,
       };
     },
   },

@@ -1,6 +1,5 @@
 import type { GeoJSON } from 'geojson';
-import type { CookieStore } from '@whatwg-node/cookie-store';
-
+import type { H3Event } from 'h3';
 import type {
   Auth,
   Session,
@@ -11,13 +10,18 @@ import type {
 
 
 export interface Context {
+  event: H3Event;
+
+  // Database
   db: DB;
   auth: Auth;
-  cookies: CookieStore;
 
+  // Auth
   user: User | null;
-  member: Member | null;
   session: Session | null;
+
+  // Organization
+  member: Member | null;
   organization: Organization | null;
 }
 
