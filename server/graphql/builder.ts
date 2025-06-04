@@ -9,6 +9,18 @@ import ValidationPlugin from "@pothos/plugin-validation";
 import WithInputPlugin from "@pothos/plugin-with-input";
 import { getTableConfig } from "drizzle-orm/pg-core";
 import SchemaBuilder from "@pothos/core";
+import ShieldPlugin from "./shield";
+import { rule } from "graphql-shield";
+import type { GraphQLResolveInfo } from "graphql";
+
+// Export the rules so they can be used in resolvers
+export const isAuthenticated = rule({ cache: 'contextual' })(
+  (_parent: unknown, _args: unknown, ctx: Context, _info: GraphQLResolveInfo) => !!ctx.user,
+);
+
+export const isAdmin = rule({ cache: 'contextual' })(
+  (_parent: unknown, _args: unknown, ctx: Context, _info: GraphQLResolveInfo) => ctx.user?.id === '1',
+);
 
 const builder = new SchemaBuilder<{
   Defaults: "v4";
@@ -69,6 +81,7 @@ const builder = new SchemaBuilder<{
     ScopeAuthPlugin,
     WithInputPlugin,
     RelayPlugin,
+    ShieldPlugin,
   ],
 
   scopeAuth: {
