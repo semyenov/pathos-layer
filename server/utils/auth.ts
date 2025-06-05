@@ -9,3 +9,12 @@ export type Invitation = typeof auth.$Infer.Invitation;
 export type Organization = typeof auth.$Infer.Organization;
 export type ActiveOrganization = typeof auth.$Infer.ActiveOrganization;
 export type Member = Omit<typeof auth.$Infer.Member, "user">;
+export interface SessionContainer {
+  user: User & { banned?: boolean };
+  session: Session;
+
+  activeOrganization?: {
+    member: Member;
+    organization: Organization;
+  }
+}

@@ -57,11 +57,11 @@ const builder = new SchemaBuilder<{
   },
 
   plugins: [
+    ShieldPlugin,
+    WithInputPlugin,
+    RelayPlugin,
     DrizzlePlugin,
     ScopeAuthPlugin,
-    WithInputPlugin,
-    ShieldPlugin,
-    RelayPlugin,
   ],
 
   scopeAuth: {

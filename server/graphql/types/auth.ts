@@ -133,7 +133,13 @@ export function addAuthTypes(builder: Builder) {
           const authContext = await context.auth.$context;
           const { sessionToken: { name: sessionTokenName } } = authContext.authCookies;
           const { attributes, name: cookieName } = authContext.createAuthCookie(sessionTokenName);
-          context.cookies.set(cookieName, token, attributes);
+          context.cookies.set(cookieName, token, {
+            ...attributes,
+            httpOnly: true,
+            secure: true,
+            sameSite: "strict",
+            maxAge: 60 * 60 * 24 * 30,
+          });
         }
 
         return token;
@@ -158,8 +164,8 @@ export function addAuthTypes(builder: Builder) {
           throw new Error("Failed to create user");
         }
 
-        const { authCookies: { sessionToken: { name, options: cookieOptions } } } =
-          await context.auth.$context;
+        const authContext = await context.auth.$context;
+        const { sessionToken: { name, options: cookieOptions } } = authContext.authCookies;
         context.cookies.set(name, token, cookieOptions);
 
         return token;
@@ -179,8 +185,8 @@ export function addAuthTypes(builder: Builder) {
         });
 
         if (session.success) {
-          const { authCookies: { sessionToken: { name: cookieName } } } =
-            await context.auth.$context;
+          const authContext = await context.auth.$context;
+          const { sessionToken: { name: cookieName } } = authContext.authCookies;
 
           context.cookies.delete(cookieName);
           return true;
